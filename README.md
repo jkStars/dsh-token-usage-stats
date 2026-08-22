@@ -1,5 +1,7 @@
 # dsh-token-usage-stats
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 DSH web plugin: cross-session token usage, request count, and optional cost
 analytics (`ctx.tokenUsageStats`), with a self-contained dashboard page at
 `/token-usage-stats` (JSON feed at `/api/token-usage-stats`) and a sidebar
