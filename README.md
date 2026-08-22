@@ -9,6 +9,10 @@ footer entry opening the dashboard in an in-page modal.
 
 ## Screenshots
 
+**Sidebar footer entry — click 「用量统计」 to open the dashboard**
+
+![Usage entry](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/usage-entry.png)
+
 **Dashboard — today view** (cost stack, token trend, breakdown, per-model and top-session tables)
 
 ![Dashboard - today](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard.png)

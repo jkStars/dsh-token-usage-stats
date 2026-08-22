@@ -6,6 +6,10 @@ DSH Web 插件：跨会话的 Token 用量、请求次数与可选成本统计�
 
 ## 截图
 
+**侧边栏底部入口 — 点击「用量统计」打开仪表盘**
+
+![使用入口](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/usage-entry.png)
+
 **仪表盘 - 今天视图**（成本堆叠、token 趋势、构成占比、按模型与 TOP 对话表）
 
 ![仪表盘 - 今天](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard.png)
