@@ -1,0 +1,67 @@
+/* Sidebar footer action: wide shows the label, the 56px rail shows only the
+   chart glyph. Geometry matches the neighboring settings trigger row. */
+
+.root {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  padding: 0 8px;
+  margin-bottom: 4px;
+  box-sizing: border-box;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.root:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.root:focus-visible {
+  outline: 2px solid var(--dsw-alias-accent, #2563eb);
+  outline-offset: -2px;
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.railOnly {
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  margin-bottom: 0;
+  border-radius: 50%;
+}
+
+/* Modal chrome: the dashboard needs a wider card than the default 380px. */
+.dialog {
+  width: min(960px, 100%);
+}
+
+/* The iframe body should fill the modal without extra side padding. */
+.dialogBody {
+  overflow: hidden;
+}
+
+.frame {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: min(70vh, 640px);
+  min-height: 360px;
+  border: 0;
+  background: var(--dsw-alias-bg-layer-2, #fff);
+}

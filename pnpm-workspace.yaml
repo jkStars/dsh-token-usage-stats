@@ -1,0 +1,7 @@
+packages:
+  - .
+
+# The @deepseek-ai/dsh-* peers are provided by the dsh host at runtime, not by
+# npm (only placeholder 0.0.1-rc.1 exists there); do not try to install them.
+# Kept here (not in .npmrc) so npm never sees the pnpm-only key.
+autoInstallPeers: false
