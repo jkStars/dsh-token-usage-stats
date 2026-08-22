@@ -44,7 +44,7 @@
     "src",
     "cordis.patch.yml",
     "README.md",
-    "README.zh-CN.md"
+    "README.en.md"
   ],
   "scripts": {
     "build": "node -e \"require('node:fs').rmSync('lib',{recursive:true,force:true})\" && tsc -p tsconfig.build.json && tsdown",

@@ -1,67 +1,54 @@
 # dsh-token-usage-stats
 
-[English](README.md) | [简体中文](README.zh-CN.md)
+[简体中文](README.md) | [English](README.en.md)
 
-DSH web plugin: cross-session token usage, request count, and optional cost
-analytics (`ctx.tokenUsageStats`), with a self-contained dashboard page at
-`/token-usage-stats` (JSON feed at `/api/token-usage-stats`) and a sidebar
-footer entry opening the dashboard in an in-page modal.
+DSH Web 插件：跨会话的 Token 用量、请求次数与可选成本统计（`ctx.tokenUsageStats`），自带独立仪表盘页面（`/token-usage-stats`，JSON 数据源 `/api/token-usage-stats`）以及侧边栏底部入口（页内模态框打开仪表盘）。
 
-## Screenshots
+## 截图
 
-**Sidebar footer entry — click 「用量统计」 to open the dashboard**
+**侧边栏底部入口 — 点击「用量统计」打开仪表盘**
 
-![Usage entry](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/usage-entry.png)
+![使用入口](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/usage-entry.png)
 
-**Dashboard — today view** (cost stack, token trend, breakdown, per-model and top-session tables)
+**仪表盘 - 今天视图**（成本堆叠、token 趋势、构成占比、按模型与 TOP 对话表）
 
-![Dashboard - today](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard.png)
+![仪表盘 - 今天](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard.png)
 
-**Breakdown tooltip** (hover a bar for per-category details)
+**构成明细悬浮提示**（悬停柱子查看分类明细）
 
-![Dashboard - cost tooltip](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard-cost-tooltip.png)
+![仪表盘 - 悬浮提示](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard-cost-tooltip.png)
 
-**All-range daily view**
+**全部范围 - 按天视图**
 
-![Dashboard - all ranges](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard-all.png)
+![仪表盘 - 全部范围](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard-all.png)
 
-> **Note**: Only DeepSeek official API costs are currently counted (token usage, request counts, and cost are replayed from local Harness session logs); it does not include API costs from other providers or channels.
+> **说明**：目前仅统计 DeepSeek 官方 API 的费用（token 用量、请求次数与成本基于本地 Harness 会话日志回放），不包含其它提供商/渠道的 API 费用。
 
-## Install
+## 安装
 
 ```sh
-dsh plugin --profile web add dsh-token-usage-stats@0.1.1
+dsh plugin --profile web add dsh-token-usage-stats@0.3.3
 ```
 
-The package's `cordis.patch.yml` inserts the plugin row; the browser half
-loads from the `dsh.client` manifest. Restart the host (or reload the GUI)
-after installing.
+插件的 `cordis.patch.yml` 会插入插件行；浏览器半区通过 `dsh.client` 清单自动加载。安装后重启宿主（或刷新 GUI）。
 
-To update to a newer release:
+更新到新版本：
 
 ```sh
 dsh plugin --profile web add dsh-token-usage-stats@latest
 ```
 
-## Usage
+## 使用
 
-Open the dashboard from the sidebar footer entry, or browse directly to
-`http://<host>:<port>/token-usage-stats`. The page defaults to today's hourly
-view and offers 今天 / 近 3 天 / 全部 ranges; it auto-refreshes every 10
-seconds. Cost figures appear only when model pricing is configured.
+从侧边栏底部入口打开仪表盘，或直接访问 `http://<host>:<port>/token-usage-stats`。
 
-## Config
+页面默认显示「今天」的按小时视图，可切换 今天 / 近 3 天 / 近 7 天 / 全部 范围，其中「近 7 天」和「全部」显示按天视图。每 10 秒自动刷新一次。仅当配置了模型定价时才显示成本金额。
 
-The inserted row accepts `config.currency` (report cost in this currency) and
-`config.pricing` (per-model per-million-token prices). Cost is computed with a
-**peak/off-peak split**: peak hours are Beijing time 09:00-12:00 and
-14:00-18:00, every other Beijing hour is off-peak. A model priced with a
-`peak`/`offpeak` pair uses the matching tier by the usage record's time; a
-model priced with only the four flat keys uses that price at any hour. The
-default row ships `currency: CNY` and peak/off-peak pricing for
-`deepseek-v4-flash`, `deepseek-v4-pro`, and `deepseek-v4-flash-vision-exp`.
+## 配置
 
-Example override in the profile's own `cordis.patch.yml`:
+插入行支持 `config.currency`（成本显示货币）与 `config.pricing`（各模型每百万 token 的价格）。成本按**高峰/闲时两档**计价：高峰为北京时间 09:00-12:00、14:00-18:00，其余北京时段为闲时。用 `peak`/`offpeak` 两档的模型按使用时间取对应档位；只用四个平档键（`uncachedInputPerMillion` / `cacheReadPerMillion` / `cacheWritePerMillion` / `outputPerMillion`）的模型任意时段同价。默认行带 `currency: CNY`，以及 `deepseek-v4-flash` / `deepseek-v4-pro` / `deepseek-v4-flash-vision-exp` 的高峰/闲时定价。
+
+在 profile 自己的 `cordis.patch.yml` 中覆盖示例：
 
 ```yaml
 - patch:
@@ -82,21 +69,25 @@ Example override in the profile's own `cordis.patch.yml`:
               outputPerMillion: 4.5
 ```
 
-## Development
+## 开发
 
 ```sh
-pnpm install   # devDependencies link the local deepseek-harness checkout
+pnpm install   # devDependencies 通过 link: 指向本地 deepseek-harness checkout
 pnpm run build # tsc -> lib/types, tsdown -> lib/index.js + lib/client.js
 ```
 
-The `devDependencies` resolve the `@deepseek-ai/dsh-*` type surface through
-`link:` entries that expect the harness checkout at `../deepseek-harness`
-relative to this package. Runtime peers are provided by the dsh host, not
-installed from npm.
+`devDependencies` 通过 `link:` 条目解析 `@deepseek-ai/dsh-*` 的类型，要求 harness checkout 位于本包上一级目录 `../deepseek-harness`。运行时 peer 依赖由 dsh 宿主提供，不从 npm 安装。
 
-## Publish
+## 发布
 
 ```sh
 npm run build
-npm publish    # runs prepublishOnly (npm run build) automatically
+npm publish    # 自动执行 prepublishOnly（npm run build）
 ```
+
+## 仓库与反馈
+
+- npm：<https://www.npmjs.com/package/dsh-token-usage-stats>
+- 源码：<https://github.com/jkStars/dsh-token-usage-stats>
+
+欢迎提 Issue 或 PR。
