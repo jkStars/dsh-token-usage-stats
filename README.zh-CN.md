@@ -4,6 +4,16 @@
 
 DSH Web 插件：跨会话的 Token 用量、请求次数与可选成本统计（`ctx.tokenUsageStats`），自带独立仪表盘页面（`/token-usage-stats`，JSON 数据源 `/api/token-usage-stats`）以及侧边栏底部入口（页内模态框打开仪表盘）。
 
+## 截图
+
+**今天视图**（默认按小时，含范围切换与成本卡片）
+
+![仪表盘 - 今天视图](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard-today.png)
+
+**全部范围视图**（跨多天的趋势与按模型统计）
+
+![仪表盘 - 全部范围](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard-all.png)
+
 ## 安装
 
 ```sh

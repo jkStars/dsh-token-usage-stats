@@ -7,6 +7,16 @@ analytics (`ctx.tokenUsageStats`), with a self-contained dashboard page at
 `/token-usage-stats` (JSON feed at `/api/token-usage-stats`) and a sidebar
 footer entry opening the dashboard in an in-page modal.
 
+## Screenshots
+
+**Today view** (default hourly, with range switcher and cost cards)
+
+![Dashboard - today view](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard-today.png)
+
+**All-range view** (multi-day trend and per-model breakdown)
+
+![Dashboard - all ranges](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard-all.png)
+
 ## Install
 
 ```sh
