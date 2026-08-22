@@ -43,8 +43,13 @@ seconds. Cost figures appear only when model pricing is configured.
 ## Config
 
 The inserted row accepts `config.currency` (report cost in this currency) and
-`config.pricing` (per-model per-million-token prices). The default row ships
-`currency: CNY` and pricing for `deepseek-v4-flash` / `deepseek-v4-pro`.
+`config.pricing` (per-model per-million-token prices). Cost is computed with a
+**peak/off-peak split**: peak hours are Beijing time 09:00-12:00 and
+14:00-18:00, every other Beijing hour is off-peak. A model priced with a
+`peak`/`offpeak` pair uses the matching tier by the usage record's time; a
+model priced with only the four flat keys uses that price at any hour. The
+default row ships `currency: CNY` and peak/off-peak pricing for
+`deepseek-v4-flash`, `deepseek-v4-pro`, and `deepseek-v4-flash-vision-exp`.
 
 Example override in the profile's own `cordis.patch.yml`:
 
@@ -53,6 +58,18 @@ Example override in the profile's own `cordis.patch.yml`:
     - id: token-usage-stats
       config:
         currency: USD
+        pricing:
+          deepseek-v4-flash:
+            peak:
+              uncachedInputPerMillion: 3.0
+              cacheReadPerMillion: 0.10
+              cacheWritePerMillion: 0
+              outputPerMillion: 9.0
+            offpeak:
+              uncachedInputPerMillion: 1.5
+              cacheReadPerMillion: 0.05
+              cacheWritePerMillion: 0
+              outputPerMillion: 4.5
 ```
 
 ## Development

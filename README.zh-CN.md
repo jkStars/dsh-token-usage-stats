@@ -43,9 +43,14 @@ dsh plugin --profile web add dsh-token-usage-stats@latest
 | 字段 | 说明 |
 |---|---|
 | `config.currency` | 成本显示货币 |
-| `config.pricing` | 各模型每百万 token 的价格（`uncachedInputPerMillion` / `cacheReadPerMillion` / `cacheWritePerMillion` / `outputPerMillion`） |
+| `config.pricing` | 各模型每百万 token 的价格 |
 
-默认行带 `currency: CNY` 以及 `deepseek-v4-flash` / `deepseek-v4-pro` 的定价。
+`config.pricing` 支持**高峰/闲时两档计价**：
+- **高峰时段**：北京时间 09:00-12:00、14:00-18:00；
+- **闲时时段**：其余所有北京时段；
+- 模型用 `peak`/`offpeak` 两档时按使用时间取对应档位；只用四个平档键（`uncachedInputPerMillion` / `cacheReadPerMillion` / `cacheWritePerMillion` / `outputPerMillion`）时任意时段同价。
+
+默认行带 `currency: CNY`，以及 `deepseek-v4-flash` / `deepseek-v4-pro` / `deepseek-v4-flash-vision-exp` 的高峰/闲时定价。
 
 在 profile 自己的 `cordis.patch.yml` 中覆盖示例：
 

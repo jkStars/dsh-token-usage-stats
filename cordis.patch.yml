@@ -10,6 +10,12 @@
 # stack. The profile boot then merges this patch (a single `insert` of the
 # plugin row) like a manual cordis.patch.yml mount. The client half loads
 # automatically from the package's `dsh.client` manifest.
+#
+# `pricing` supports a peak/off-peak split per model. Peak hours are Beijing
+# time 09:00-12:00 and 14:00-18:00; every other Beijing hour is off-peak.
+# A model priced with only the four flat keys (no `peak`/`offpeak`) applies
+# that price at any hour. `cacheWritePerMillion` is not part of the published
+# DeepSeek price book and defaults to 0.
 - insert:
     - id: token-usage-stats
       name: 'dsh-token-usage-stats'
@@ -17,12 +23,35 @@
         currency: CNY
         pricing:
           deepseek-v4-flash:
-            uncachedInputPerMillion: 1
-            cacheReadPerMillion: 0.02
-            cacheWritePerMillion: 0
-            outputPerMillion: 2
+            peak:
+              uncachedInputPerMillion: 3.0
+              cacheReadPerMillion: 0.10
+              cacheWritePerMillion: 0
+              outputPerMillion: 9.0
+            offpeak:
+              uncachedInputPerMillion: 1.5
+              cacheReadPerMillion: 0.05
+              cacheWritePerMillion: 0
+              outputPerMillion: 4.5
           deepseek-v4-pro:
-            uncachedInputPerMillion: 3
-            cacheReadPerMillion: 0.025
-            cacheWritePerMillion: 0
-            outputPerMillion: 6
+            peak:
+              uncachedInputPerMillion: 9.0
+              cacheReadPerMillion: 0.30
+              cacheWritePerMillion: 0
+              outputPerMillion: 27.0
+            offpeak:
+              uncachedInputPerMillion: 4.5
+              cacheReadPerMillion: 0.15
+              cacheWritePerMillion: 0
+              outputPerMillion: 13.5
+          deepseek-v4-flash-vision-exp:
+            peak:
+              uncachedInputPerMillion: 3.0
+              cacheReadPerMillion: 0.10
+              cacheWritePerMillion: 0
+              outputPerMillion: 9.0
+            offpeak:
+              uncachedInputPerMillion: 1.5
+              cacheReadPerMillion: 0.05
+              cacheWritePerMillion: 0
+              outputPerMillion: 4.5

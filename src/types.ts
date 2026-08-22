@@ -5,9 +5,9 @@
  * @module @deepseek-ai/dsh-token-usage-stats/types
  */
 
-/** Optional per-million-token prices used to project a cost figure. */
-export interface ModelPricing {
-  /** CNY (or configured currency) per 1,000,000 uncached input tokens. */
+/** Per-million-token price keys shared by a flat price and each time tier. */
+export interface ModelPriceTier {
+  /** Per 1,000,000 uncached input tokens. */
   readonly uncachedInputPerMillion?: number
   /** Per 1,000,000 cache-read input tokens. */
   readonly cacheReadPerMillion?: number
@@ -15,6 +15,23 @@ export interface ModelPricing {
   readonly cacheWritePerMillion?: number
   /** Per 1,000,000 output tokens. */
   readonly outputPerMillion?: number
+}
+
+/**
+ * Per-model price book. Either a flat price applied at every hour, or a
+ * peak/off-peak split. Peak hours are Beijing time 09:00-12:00 and
+ * 14:00-18:00; every other Beijing hour is off-peak.
+ *
+ * When either `peak` or `offpeak` is present the model is priced by time of
+ * day and the top-level flat keys are ignored; otherwise the top-level keys
+ * (the {@link ModelPriceTier} fields directly on this object) apply at any
+ * hour.
+ */
+export interface ModelPricing extends ModelPriceTier {
+  /** Peak-hour prices (Beijing 09:00-12:00 and 14:00-18:00). */
+  readonly peak?: ModelPriceTier
+  /** Off-peak prices (all other Beijing hours). */
+  readonly offpeak?: ModelPriceTier
 }
 
 /**

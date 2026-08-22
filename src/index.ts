@@ -17,6 +17,7 @@ import { renderUsageDashboard } from './dashboard.ts'
 import { parseTokenUsageStatsQuery } from './routes.ts'
 import type {
   ModelPricing,
+  ModelPriceTier,
   ModelUsage,
   TokenUsageStatsConfig,
   TokenUsageStatsQuery,
@@ -97,6 +98,31 @@ function validateConfig(config: TokenUsageStatsConfig): ResolvedConfig {
     throw new Error('TokenUsageStatsConfig: currency must be a non-empty string')
   }
 
+  const parseTier = (value: Readonly<ModelPriceTier>, path: string): Mutable<ModelPriceTier> => {
+    for (const key of Object.keys(value)) {
+      if (!PRICING_KEYS.has(key)) {
+        throw new Error(`TokenUsageStatsConfig: pricing "${path}" has unknown key "${key}"`)
+      }
+    }
+    const tier: Mutable<ModelPriceTier> = {}
+    const check = (
+      key: 'uncachedInputPerMillion' | 'cacheReadPerMillion' | 'cacheWritePerMillion' | 'outputPerMillion',
+    ): void => {
+      const entry = value[key]
+      if (entry !== undefined) {
+        if (!isNonNegativeFinite(entry)) {
+          throw new Error(`TokenUsageStatsConfig: pricing "${path}.${key}" must be a non-negative finite number`)
+        }
+        tier[key] = entry
+      }
+    }
+    check('uncachedInputPerMillion')
+    check('cacheReadPerMillion')
+    check('cacheWritePerMillion')
+    check('outputPerMillion')
+    return tier
+  }
+
   const pricing: Record<string, ModelPricing> = {}
   if (config.pricing !== undefined) {
     if (typeof config.pricing !== 'object' || Array.isArray(config.pricing)) {
@@ -109,35 +135,34 @@ function validateConfig(config: TokenUsageStatsConfig): ResolvedConfig {
       if (typeof value !== 'object' || Array.isArray(value)) {
         throw new Error(`TokenUsageStatsConfig: pricing for "${model}" must be an object`)
       }
-      for (const key of Object.keys(value)) {
-        if (!PRICING_KEYS.has(key)) {
+      const keys = Object.keys(value)
+      const hasTier = keys.includes('peak') || keys.includes('offpeak')
+      const allowed = new Set(hasTier ? [...PRICING_KEYS, 'peak', 'offpeak'] : [...PRICING_KEYS])
+      for (const key of keys) {
+        if (!allowed.has(key)) {
           throw new Error(`TokenUsageStatsConfig: pricing for "${model}" has unknown key "${key}"`)
         }
       }
       const price: Mutable<ModelPricing> = {}
-      if (value.uncachedInputPerMillion !== undefined) {
-        if (!isNonNegativeFinite(value.uncachedInputPerMillion)) {
-          throw new Error(`TokenUsageStatsConfig: pricing "${model}.uncachedInputPerMillion" must be a non-negative finite number`)
+      if (hasTier) {
+        if (value.peak !== undefined) {
+          if (typeof value.peak !== 'object' || Array.isArray(value.peak)) {
+            throw new Error(`TokenUsageStatsConfig: pricing "${model}.peak" must be an object`)
+          }
+          price.peak = deepFreeze(parseTier(value.peak, `${model}.peak`))
         }
-        price.uncachedInputPerMillion = value.uncachedInputPerMillion
-      }
-      if (value.cacheReadPerMillion !== undefined) {
-        if (!isNonNegativeFinite(value.cacheReadPerMillion)) {
-          throw new Error(`TokenUsageStatsConfig: pricing "${model}.cacheReadPerMillion" must be a non-negative finite number`)
+        if (value.offpeak !== undefined) {
+          if (typeof value.offpeak !== 'object' || Array.isArray(value.offpeak)) {
+            throw new Error(`TokenUsageStatsConfig: pricing "${model}.offpeak" must be an object`)
+          }
+          price.offpeak = deepFreeze(parseTier(value.offpeak, `${model}.offpeak`))
         }
-        price.cacheReadPerMillion = value.cacheReadPerMillion
-      }
-      if (value.cacheWritePerMillion !== undefined) {
-        if (!isNonNegativeFinite(value.cacheWritePerMillion)) {
-          throw new Error(`TokenUsageStatsConfig: pricing "${model}.cacheWritePerMillion" must be a non-negative finite number`)
-        }
-        price.cacheWritePerMillion = value.cacheWritePerMillion
-      }
-      if (value.outputPerMillion !== undefined) {
-        if (!isNonNegativeFinite(value.outputPerMillion)) {
-          throw new Error(`TokenUsageStatsConfig: pricing "${model}.outputPerMillion" must be a non-negative finite number`)
-        }
-        price.outputPerMillion = value.outputPerMillion
+      } else {
+        const tier = parseTier(value, model)
+        if (tier.uncachedInputPerMillion !== undefined) price.uncachedInputPerMillion = tier.uncachedInputPerMillion
+        if (tier.cacheReadPerMillion !== undefined) price.cacheReadPerMillion = tier.cacheReadPerMillion
+        if (tier.cacheWritePerMillion !== undefined) price.cacheWritePerMillion = tier.cacheWritePerMillion
+        if (tier.outputPerMillion !== undefined) price.outputPerMillion = tier.outputPerMillion
       }
       pricing[model] = deepFreeze(price)
     }
@@ -423,15 +448,42 @@ export class TokenUsageStats extends Service {
     this.requestRecords.push({ time, provider, model })
   }
 
-  /** Compute cost for one usage record, or undefined when no price is configured. */
-  private _costFor(model: string, usage: TokenUsage): number | undefined {
+  /**
+   * True during peak hours: Beijing time 09:00-12:00 and 14:00-18:00.
+   * Beijing time is fixed UTC+8 (no daylight saving), so reading the UTC
+   * hours of a +8-shifted epoch yields the Beijing wall-clock hour.
+   * @param time - the usage record's time (Unix ms).
+   */
+  private _isPeak(time: number): boolean {
+    const hour = new Date(time + 8 * 3_600_000).getUTCHours()
+    return (hour >= 9 && hour < 12) || (hour >= 14 && hour < 18)
+  }
+
+  /**
+   * One price key for a model at the given time: the peak/off-peak tier when
+   * the model is tiered, else the flat top-level key.
+   * @param model - provider model id.
+   * @param time - the usage record's time (Unix ms) used to pick the tier.
+   * @param key - the price key to read.
+   */
+  private _price(model: string, time: number, key: keyof ModelPriceTier): number | undefined {
     const price = this.config.pricing[model]
     if (price === undefined) return undefined
+    if (price.peak !== undefined || price.offpeak !== undefined) {
+      const tier = this._isPeak(time) ? (price.peak ?? price.offpeak) : (price.offpeak ?? price.peak)
+      return tier?.[key]
+    }
+    return price[key]
+  }
+
+  /** Compute cost for one usage record, or undefined when no pricing is configured. */
+  private _costFor(model: string, usage: TokenUsage, time: number): number | undefined {
+    if (this.config.pricing[model] === undefined) return undefined
     return (
-      usage.inputTokens * (price.uncachedInputPerMillion ?? 0)
-      + (usage.cacheReadTokens ?? 0) * (price.cacheReadPerMillion ?? 0)
-      + (usage.cacheWriteTokens ?? 0) * (price.cacheWritePerMillion ?? 0)
-      + usage.outputTokens * (price.outputPerMillion ?? 0)
+      usage.inputTokens * (this._price(model, time, 'uncachedInputPerMillion') ?? 0)
+      + (usage.cacheReadTokens ?? 0) * (this._price(model, time, 'cacheReadPerMillion') ?? 0)
+      + (usage.cacheWriteTokens ?? 0) * (this._price(model, time, 'cacheWritePerMillion') ?? 0)
+      + usage.outputTokens * (this._price(model, time, 'outputPerMillion') ?? 0)
     ) / 1_000_000
   }
 
@@ -452,7 +504,7 @@ export class TokenUsageStats extends Service {
       totals.cacheReadTokens += record.usage.cacheReadTokens ?? 0
       totals.cacheWriteTokens += record.usage.cacheWriteTokens ?? 0
       totals.outputTokens += record.usage.outputTokens
-      const recordCost = this._costFor(record.model, record.usage)
+      const recordCost = this._costFor(record.model, record.usage, record.time)
       if (recordCost === undefined) allPriced = false
       else cost = (cost ?? 0) + recordCost
     }
