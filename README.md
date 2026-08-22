@@ -9,13 +9,19 @@ footer entry opening the dashboard in an in-page modal.
 
 ## Screenshots
 
-**Today view** (default hourly, with range switcher and cost cards)
+**Dashboard — today view** (cost stack, token trend, breakdown, per-model and top-session tables)
 
-![Dashboard - today view](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard-today.png)
+![Dashboard - today](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard.png)
 
-**All-range view** (multi-day trend and per-model breakdown)
+**Breakdown tooltip** (hover a bar for per-category details)
+
+![Dashboard - cost tooltip](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard-cost-tooltip.png)
+
+**All-range daily view**
 
 ![Dashboard - all ranges](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard-all.png)
+
+> **Note**: 目前仅统计 DeepSeek 官方 API 的费用（token 用量、请求次数与成本基于本地 Harness 会话日志回放），不包含其它提供商/渠道的 API 费用。
 
 ## Install
 

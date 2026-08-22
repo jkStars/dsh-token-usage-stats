@@ -6,13 +6,19 @@ DSH Web 插件：跨会话的 Token 用量、请求次数与可选成本统计�
 
 ## 截图
 
-**今天视图**（默认按小时，含范围切换与成本卡片）
+**仪表盘 - 今天视图**（成本堆叠、token 趋势、构成占比、按模型与 TOP 对话表）
 
-![仪表盘 - 今天视图](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard-today.png)
+![仪表盘 - 今天](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard.png)
 
-**全部范围视图**（跨多天的趋势与按模型统计）
+**构成明细悬浮提示**（悬停柱子查看分类明细）
+
+![仪表盘 - 悬浮提示](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard-cost-tooltip.png)
+
+**全部范围 - 按天视图**
 
 ![仪表盘 - 全部范围](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard-all.png)
+
+> **说明**：目前仅统计 DeepSeek 官方 API 的费用（token 用量、请求次数与成本基于本地 Harness 会话日志回放），不包含其它提供商/渠道的 API 费用。
 
 ## 安装
 

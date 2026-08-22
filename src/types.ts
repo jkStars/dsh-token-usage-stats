@@ -87,6 +87,23 @@ export interface UsageSeriesPoint {
   readonly endTime: number
   /** Aggregated counters in the bucket. */
   readonly totals: UsageTotals
+  /**
+   * Cost by model in this bucket (peak/off-peak aware), used for stacked
+   * breakdown charts; empty when no pricing is configured.
+   */
+  readonly models?: readonly { model: string; cost: number }[]
+}
+
+/** Per-session aggregate for the top-consumers list. */
+export interface SessionUsage {
+  /** Session id. */
+  readonly id: string
+  /** Human session title from the latest `session/title` event, when present. */
+  readonly title: string | null
+  /** Last request/usage time (Unix ms) in this session's scope. */
+  readonly lastTime: number
+  /** Aggregated counters for this session. */
+  readonly totals: UsageTotals
 }
 
 /** Immutable analytics snapshot served by {@link TokenUsageStats}. */
@@ -99,6 +116,8 @@ export interface TokenUsageStatsSnapshot {
   readonly models: readonly ModelUsage[]
   /** Time-bucketed aggregate counters. */
   readonly series: readonly UsageSeriesPoint[]
+  /** Top-consuming sessions in the current scope, richest first. */
+  readonly topSessions: readonly SessionUsage[]
 }
 
 /** Filter and bucketing options for {@link TokenUsageStatsService.snapshot}. */

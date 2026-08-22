@@ -45,6 +45,9 @@ importers:
       '@deepseek-ai/dsh-session-persistence':
         specifier: link:../deepseek-harness/packages/session/session-persistence
         version: link:../deepseek-harness/packages/session/session-persistence
+      '@deepseek-ai/dsh-session-title':
+        specifier: link:../deepseek-harness/packages/session/session-title
+        version: link:../deepseek-harness/packages/session/session-title
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.1

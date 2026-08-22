@@ -13,12 +13,14 @@ import type { TokenUsage } from '@deepseek-ai/dsh-llm'
 import type { Session, SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
 import type { SessionPersistence } from '@deepseek-ai/dsh-session-persistence'
 import type {} from '@deepseek-ai/dsh-host-webserver'
+import type {} from '@deepseek-ai/dsh-session-title'
 import { renderUsageDashboard } from './dashboard.ts'
 import { parseTokenUsageStatsQuery } from './routes.ts'
 import type {
   ModelPricing,
   ModelPriceTier,
   ModelUsage,
+  SessionUsage,
   TokenUsageStatsConfig,
   TokenUsageStatsQuery,
   TokenUsageStatsSnapshot,
@@ -30,6 +32,7 @@ export type * from './types.ts'
 
 /** One provider-reported usage sample retained for one session step. */
 interface UsageRecord {
+  readonly sessionId: SessionId
   readonly time: number
   readonly provider: string
   readonly model: string
@@ -40,6 +43,7 @@ interface UsageRecord {
 
 /** One dispatched model request retained for request-count bucketing. */
 interface RequestRecord {
+  readonly sessionId: SessionId
   readonly time: number
   readonly provider: string
   readonly model: string
@@ -197,7 +201,7 @@ declare module '@deepseek-ai/cordis' {
  * The service observes `session/event`, replays already-live sessions on mount,
  * and keeps per-step usage samples so a later final `assistant/message` replaces
  * an earlier usage chunk instead of double counting. Request counts come from
- * `request/header` events.
+ * each completed `assistant/message` (one per model call).
  */
 export class TokenUsageStats extends Service {
   static inject = ['sessions']
@@ -211,6 +215,8 @@ export class TokenUsageStats extends Service {
   private readonly requestRecords: RequestRecord[] = []
   private readonly states = new WeakMap<Session, SessionState>()
   private readonly persistedSeq = new Map<SessionId, number>()
+  /** Latest folded `session/title` text per session (last-wins). */
+  private readonly titles = new Map<SessionId, string>()
 
   constructor(ctx: Context, config: TokenUsageStatsConfig = {}) {
     super(ctx, 'tokenUsageStats')
@@ -318,6 +324,7 @@ export class TokenUsageStats extends Service {
       totals: this._totals(usageRecords, requestRecords.length),
       models: this._models(usageRecords, requestRecords),
       series: this._series(usageRecords, requestRecords, from, to, granularity),
+      topSessions: this._topSessions(usageRecords, requestRecords),
     })
   }
 
@@ -380,7 +387,6 @@ export class TokenUsageStats extends Service {
         const config = event.data.header.config
         state.provider = config.provider
         state.model = config.model
-        this._recordRequest(event.time, config.provider, config.model)
         break
       }
       case 'request/context':
@@ -400,6 +406,10 @@ export class TokenUsageStats extends Service {
         }
         break
       case 'assistant/message':
+        // One API request per completed model call: `request/header` and
+        // `request/context` are change-only snapshots, so the only per-request
+        // signal in the log is the final assistant message.
+        this._recordRequest(session, event.time, state.provider ?? 'unknown', state.model ?? 'unknown')
         if (event.data.usage !== undefined) {
           this._recordUsage(
             session,
@@ -410,6 +420,9 @@ export class TokenUsageStats extends Service {
             event.data.usage,
           )
         }
+        break
+      case 'session/title':
+        this.titles.set(session, event.data.title)
         break
       default:
         break
@@ -427,6 +440,7 @@ export class TokenUsageStats extends Service {
   ): void {
     const key = `${sessionId}:${turn}:${step}`
     const record: UsageRecord = {
+      sessionId,
       time,
       provider: state.provider ?? 'unknown',
       model: state.model ?? 'unknown',
@@ -444,8 +458,8 @@ export class TokenUsageStats extends Service {
   }
 
   /** Record one dispatched request for count bucketing. */
-  private _recordRequest(time: number, provider: string, model: string): void {
-    this.requestRecords.push({ time, provider, model })
+  private _recordRequest(sessionId: SessionId, time: number, provider: string, model: string): void {
+    this.requestRecords.push({ sessionId, time, provider, model })
   }
 
   /**
@@ -598,11 +612,50 @@ export class TokenUsageStats extends Service {
       }
     }
 
-    return buckets.map(bucket => ({
-      startTime: bucket.startTime,
-      endTime: bucket.startTime + bucketSize,
-      totals: this._totals(bucket.usageRecords, bucket.requestCount),
-    }))
+    return buckets.map(bucket => {
+      const byModel = new Map<string, number>()
+      for (const record of bucket.usageRecords) {
+        const cost = this._costFor(record.model, record.usage, record.time)
+        if (cost !== undefined) byModel.set(record.model, (byModel.get(record.model) ?? 0) + cost)
+      }
+      return {
+        startTime: bucket.startTime,
+        endTime: bucket.startTime + bucketSize,
+        totals: this._totals(bucket.usageRecords, bucket.requestCount),
+        models: [...byModel.entries()].map(([model, cost]) => ({ model, cost })),
+      }
+    })
+  }
+
+  /** Group filtered records by session and return the richest first (top 5). */
+  private _topSessions(usageRecords: readonly UsageRecord[], requestRecords: readonly RequestRecord[]): SessionUsage[] {
+    const bySession = new Map<SessionId, { usage: UsageRecord[]; requests: number; last: number }>()
+    for (const record of usageRecords) {
+      let entry = bySession.get(record.sessionId)
+      if (entry === undefined) {
+        entry = { usage: [], requests: 0, last: 0 }
+        bySession.set(record.sessionId, entry)
+      }
+      entry.usage.push(record)
+      if (record.time > entry.last) entry.last = record.time
+    }
+    for (const record of requestRecords) {
+      const entry = bySession.get(record.sessionId)
+      if (entry !== undefined) {
+        entry.requests += 1
+        if (record.time > entry.last) entry.last = record.time
+      }
+    }
+    return [...bySession.entries()]
+      .map(([id, entry]) => ({
+        id: String(id),
+        title: this.titles.get(id) ?? null,
+        lastTime: entry.last,
+        totals: this._totals(entry.usage, entry.requests),
+      }))
+      .sort((left, right) => (right.totals.cost ?? 0) - (left.totals.cost ?? 0)
+        || right.totals.totalTokens - left.totals.totalTokens)
+      .slice(0, 5)
   }
 }
 
