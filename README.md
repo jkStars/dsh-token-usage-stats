@@ -21,7 +21,7 @@ footer entry opening the dashboard in an in-page modal.
 
 ![Dashboard - all ranges](https://raw.githubusercontent.com/jkStars/dsh-token-usage-stats/main/docs/images/dashboard-all.png)
 
-> **Note**: 目前仅统计 DeepSeek 官方 API 的费用（token 用量、请求次数与成本基于本地 Harness 会话日志回放），不包含其它提供商/渠道的 API 费用。
+> **Note**: Only DeepSeek official API costs are currently counted (token usage, request counts, and cost are replayed from local Harness session logs); it does not include API costs from other providers or channels.
 
 ## Install
 
