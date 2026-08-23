@@ -12,7 +12,8 @@
 # automatically from the package's `dsh.client` manifest.
 #
 # `pricing` supports a peak/off-peak split per model. Peak hours are Beijing
-# time 09:00-12:00 and 14:00-18:00; every other Beijing hour is off-peak.
+# time 09:00-12:00 and 14:00-18:00; every other Beijing hour is off-peak, and
+# weekends (Beijing Saturday/Sunday) are always off-peak.
 # A model priced with only the four flat keys (no `peak`/`offpeak`) applies
 # that price at any hour. `cacheWritePerMillion` is not part of the published
 # DeepSeek price book and defaults to 0.

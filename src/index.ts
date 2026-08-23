@@ -464,12 +464,18 @@ export class TokenUsageStats extends Service {
 
   /**
    * True during peak hours: Beijing time 09:00-12:00 and 14:00-18:00.
-   * Beijing time is fixed UTC+8 (no daylight saving), so reading the UTC
-   * hours of a +8-shifted epoch yields the Beijing wall-clock hour.
+   * Weekends (Beijing Saturday/Sunday) are always off-peak; only weekdays
+   * (Monday-Friday) split by time of day. Beijing time is fixed UTC+8 (no
+   * daylight saving), so reading the UTC fields of a +8-shifted epoch yields
+   * the Beijing wall-clock date and hour.
    * @param time - the usage record's time (Unix ms).
    */
   private _isPeak(time: number): boolean {
-    const hour = new Date(time + 8 * 3_600_000).getUTCHours()
+    const beijing = new Date(time + 8 * 3_600_000)
+    const day = beijing.getUTCDay()
+    // 0 = Sunday, 6 = Saturday: whole weekend is off-peak.
+    if (day === 0 || day === 6) return false
+    const hour = beijing.getUTCHours()
     return (hour >= 9 && hour < 12) || (hour >= 14 && hour < 18)
   }
 

@@ -44,7 +44,7 @@ Open the dashboard from the sidebar footer entry, or browse directly to `http://
 
 ## Config
 
-The inserted row accepts `config.currency` (report cost in this currency) and `config.pricing` (per-model per-million-token prices). Cost is computed with a **peak/off-peak split**: peak hours are Beijing time 09:00-12:00 and 14:00-18:00, every other Beijing hour is off-peak. A model priced with a `peak`/`offpeak` pair uses the matching tier by the usage record's time; a model priced with only the four flat keys uses that price at any hour. The default row ships `currency: CNY` and peak/off-peak pricing for `deepseek-v4-flash`, `deepseek-v4-pro`, and `deepseek-v4-flash-vision-exp`.
+The inserted row accepts `config.currency` (report cost in this currency) and `config.pricing` (per-model per-million-token prices). Cost is computed with a **peak/off-peak split**: peak hours are Beijing time 09:00-12:00 and 14:00-18:00, every other Beijing hour is off-peak; weekends (Beijing Saturday/Sunday) are always off-peak. A model priced with a `peak`/`offpeak` pair uses the matching tier by the usage record's time; a model priced with only the four flat keys uses that price at any hour. The default row ships `currency: CNY` and peak/off-peak pricing for `deepseek-v4-flash`, `deepseek-v4-pro`, and `deepseek-v4-flash-vision-exp`.
 
 Example override in the profile's own `cordis.patch.yml`:
 
