@@ -77,7 +77,30 @@ export function renderUsageDashboard(): string {
   .metric .label { color: var(--muted); font-size: 12px; }
   .metric .value { font-size: 26px; font-weight: 600; margin-top: 6px; }
   .metric .unit { color: var(--muted); font-size: 12px; margin-top: 2px; }
-  .chart { min-height: 280px; }
+  .chart { min-height: 0; }
+  .chart-tabs {
+    display: flex;
+    gap: 8px;
+    margin: 0 0 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .chart-tab {
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: none;
+    color: var(--muted);
+    padding: 6px 10px;
+    margin-bottom: -1px;
+    border-radius: 0;
+    font: inherit;
+    cursor: pointer;
+  }
+  .chart-tab.active {
+    color: var(--text);
+    border-bottom-color: var(--accent);
+    font-weight: 600;
+  }
+  .chart-panel[hidden] { display: none; }
   svg { width: 100%; height: 230px; display: block; }
   .axis { stroke: var(--line); }
   .axis text { fill: var(--muted); font-size: 10px; }
@@ -169,13 +192,12 @@ export function renderUsageDashboard(): string {
   </section>
 
   <section class="card chart">
-    <h2>消费金额（<span id="costCurrency" style="text-transform:uppercase">CNY</span>）</h2>
-    <div id="costChart"></div>
-  </section>
-
-  <section class="card chart">
-    <h2>Tokens 趋势</h2>
-    <div id="series"></div>
+    <div class="chart-tabs" role="tablist" aria-label="趋势图">
+      <button id="tabTokens" class="chart-tab active" type="button" role="tab" aria-selected="true" aria-controls="series">Tokens 趋势</button>
+      <button id="tabCost" class="chart-tab" type="button" role="tab" aria-selected="false" aria-controls="costChart">消费金额（<span id="costCurrency" style="text-transform:uppercase">CNY</span>）</button>
+    </div>
+    <div id="series" class="chart-panel" role="tabpanel" aria-labelledby="tabTokens"></div>
+    <div id="costChart" class="chart-panel" role="tabpanel" aria-labelledby="tabCost" hidden></div>
   </section>
 
   <section class="card">
@@ -495,6 +517,24 @@ export function renderUsageDashboard(): string {
         + '</tr>'
     }).join('')
   }
+  function initChartTabs() {
+    var tabs = [
+      { tab: $('tabTokens'), panel: $('series') },
+      { tab: $('tabCost'), panel: $('costChart') },
+    ]
+    function select(tabId) {
+      tabs.forEach(function (entry) {
+        var active = entry.tab.id === tabId
+        entry.tab.classList.toggle('active', active)
+        entry.tab.setAttribute('aria-selected', active ? 'true' : 'false')
+        entry.panel.hidden = !active
+      })
+    }
+    tabs.forEach(function (entry) {
+      entry.tab.addEventListener('click', function () { select(entry.tab.id) })
+    })
+    select('tabTokens')
+  }
   function rangeParams() {
     var range = $('range').value
     if (range === 'all') return new URLSearchParams()
@@ -544,6 +584,7 @@ export function renderUsageDashboard(): string {
       console.error(error)
     }
   }
+  initChartTabs()
   $('refresh').addEventListener('click', load)
   $('range').addEventListener('change', load)
   $('granularity').addEventListener('change', load)
