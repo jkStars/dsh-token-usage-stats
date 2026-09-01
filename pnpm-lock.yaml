@@ -48,6 +48,9 @@ importers:
       '@deepseek-ai/dsh-session-title':
         specifier: link:../deepseek-harness/packages/session/session-title
         version: link:../deepseek-harness/packages/session/session-title
+      '@deepseek-ai/dsh-util-values':
+        specifier: 0.1.2-alpha.2
+        version: 0.1.2-alpha.2
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.1
@@ -101,6 +104,12 @@ packages:
 
   '@deepseek-ai/cosmokit@1.8.2':
     resolution: {integrity: sha512-muBOKtSrUKU5m/xpq8ZXWL6hQ/jgd4PhU2PqH97bcxIiLEJfNwZOGQEx4t/aS/GgxRAR+ra9pMHPMtTHU4sqqA==}
+
+  '@deepseek-ai/dsh-util-values@0.1.2-alpha.2':
+    resolution: {integrity: sha512-ZyZHTqGQ/8S5ZYflTkuiZGPxhkuHa9Uy5G+teEmnmnkhiN/UVPGQvI//CXRNmxpTKjfx+qcVVmr5x6bohplsQg==}
+    peerDependencies:
+      '@deepseek-ai/cordis': ^4.0.2
+      '@deepseek-ai/dsh-invariants': ^0.1.2-alpha.2
 
   '@deepseek-ai/schemastery@3.18.1':
     resolution: {integrity: sha512-Qn0FCSwCQnpnj6SB31I6i2sIKgKWnkbJM8O0EU91Gv2UsYVvtZTl6IA0sCwk2e2MZf5S8w5hpq9QkeVvK9qwxg==}
@@ -550,6 +559,8 @@ snapshots:
       '@babel/helper-validator-identifier': 8.0.4
 
   '@deepseek-ai/cosmokit@1.8.2': {}
+
+  '@deepseek-ai/dsh-util-values@0.1.2-alpha.2': {}
 
   '@deepseek-ai/schemastery@3.18.1':
     dependencies:
