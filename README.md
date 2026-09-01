@@ -27,7 +27,7 @@ DSH Web 插件：跨会话的 Token 用量、请求次数与可选成本统计�
 ## 安装
 
 ```sh
-dsh plugin --profile web add dsh-token-usage-stats@0.3.3
+dsh plugin --profile web add dsh-token-usage-stats@0.3.5
 ```
 
 插件的 `cordis.patch.yml` 会插入插件行；浏览器半区通过 `dsh.client` 清单自动加载。安装后重启宿主（或刷新 GUI）。
