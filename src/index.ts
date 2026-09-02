@@ -328,6 +328,7 @@ export class TokenUsageStats extends Service {
   private readonly persistedSeq = new Map<SessionId, number>()
   /** Latest folded `session/title` text per session (last-wins). */
   private readonly titles = new Map<SessionId, string>()
+  private persistence: SessionPersistence | undefined
 
   constructor(ctx: Context, config: TokenUsageStatsConfig = {}) {
     super(ctx, 'tokenUsageStats')
@@ -343,6 +344,7 @@ export class TokenUsageStats extends Service {
 
     for (const session of ctx.sessions.list()) this._sync(session)
     ctx.inject(['sessionPersistence'], (persistenceCtx) => {
+      this.persistence = persistenceCtx.sessionPersistence
       void this._rehydrate(persistenceCtx.sessionPersistence).catch((error: unknown) => {
         this.ctx.logger.warn(`token usage stats: rehydration failed: ${String(error)}`)
       })
@@ -374,11 +376,16 @@ export class TokenUsageStats extends Service {
         const removeApi = webCtx.webServer.register({
           kind: 'exact',
           path: '/api/token-usage-stats',
-          handler: (req, res) => {
+          handler: async (req, res) => {
             if (req.method !== 'GET' && req.method !== 'HEAD') {
               res.writeHead(405)
               res.end()
               return
+            }
+            try {
+              await this._rehydrate()
+            } catch {
+              // Ignore background read errors
             }
             // node:http always sets url on server requests; `?? '/'` keeps the
             // fallback valid for the optional IncomingMessage.url type.
@@ -544,8 +551,11 @@ export class TokenUsageStats extends Service {
    * counted the same log, and a persisted session opened later starts its live
    * fold after the replayed seq.
    */
-  private async _rehydrate(sessionPersistence: SessionPersistence): Promise<void> {
-    const anyPersistence = sessionPersistence as unknown as {
+  private async _rehydrate(sessionPersistence?: SessionPersistence): Promise<void> {
+    const sp = sessionPersistence ?? this.persistence
+    if (!sp) return
+    this.persistence = sp
+    const anyPersistence = sp as unknown as {
       list?: () => Promise<readonly { header: { id: SessionId } }[]>
       listSnapshots?: () => Promise<readonly { header: { id: SessionId } }[]>
       open?: (id: SessionId, access: string) => Promise<{
@@ -560,20 +570,26 @@ export class TokenUsageStats extends Service {
     const snapshots = await listFn.call(anyPersistence)
     for (const snapshot of snapshots) {
       const id = snapshot.header.id
-      if (this.ctx.sessions.get(id) !== undefined) continue
+      const lastSeq = this.persistedSeq.get(id) ?? 0
 
       let events: readonly SessionEvent[] = []
-      if (typeof anyPersistence.open === 'function') {
-        const handle = await anyPersistence.open(id, 'read')
-        try {
-          events = await handle.read()
-        } finally {
-          await handle.close()
+      try {
+        if (typeof anyPersistence.open === 'function') {
+          const handle = await anyPersistence.open(id, 'read')
+          try {
+            events = await handle.read()
+          } finally {
+            await handle.close()
+          }
+        } else if (typeof anyPersistence.inspect === 'function') {
+          const inspection = await anyPersistence.inspect(id)
+          events = inspection.events
         }
-      } else if (typeof anyPersistence.inspect === 'function') {
-        const inspection = await anyPersistence.inspect(id)
-        events = inspection.events
+      } catch {
+        continue
       }
+
+      if (events.length <= lastSeq) continue
 
       this.persistedSeq.set(id, events.length)
       const live = this.ctx.sessions.get(id)
@@ -581,9 +597,11 @@ export class TokenUsageStats extends Service {
         const liveState = this.states.get(live)
         if (liveState !== undefined && liveState.consumedEvents >= events.length) continue
       }
-      const state: SessionState = { consumedEvents: 0, provider: undefined, model: undefined }
-      for (const event of events) {
-        this._foldEvent(id, state, event)
+      const state: SessionState = { consumedEvents: lastSeq, provider: undefined, model: undefined }
+      for (let i = lastSeq; i < events.length; i++) {
+        // Session construction ensures non-null contiguous events
+        // oxlint-disable-next-line typescript/no-non-null-assertion
+        this._foldEvent(id, state, events[i]!)
         state.consumedEvents += 1
       }
     }
