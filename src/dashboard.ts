@@ -1082,6 +1082,34 @@ export function renderUsageDashboard(): string {
           outputPerMillion: 4.5
         }
       },
+      'deepseek-v4-flash-vision-exp': {
+        peak: {
+          uncachedInputPerMillion: 3.0,
+          cacheReadPerMillion: 0.1,
+          cacheWritePerMillion: 0,
+          outputPerMillion: 9.0
+        },
+        offpeak: {
+          uncachedInputPerMillion: 1.5,
+          cacheReadPerMillion: 0.05,
+          cacheWritePerMillion: 0,
+          outputPerMillion: 4.5
+        }
+      },
+      'deepseek-v4-pro': {
+        peak: {
+          uncachedInputPerMillion: 9.0,
+          cacheReadPerMillion: 0.3,
+          cacheWritePerMillion: 0,
+          outputPerMillion: 27.0
+        },
+        offpeak: {
+          uncachedInputPerMillion: 4.5,
+          cacheReadPerMillion: 0.15,
+          cacheWritePerMillion: 0,
+          outputPerMillion: 13.5
+        }
+      },
       'deepseek-chat': {
         uncachedInputPerMillion: 2.0,
         cacheReadPerMillion: 0.5,
