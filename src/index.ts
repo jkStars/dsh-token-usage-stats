@@ -356,24 +356,44 @@ export class TokenUsageStats extends Service {
    * fold after the replayed seq.
    */
   private async _rehydrate(sessionPersistence: SessionPersistence): Promise<void> {
-    const snapshots = await sessionPersistence.listSnapshots()
+    const anyPersistence = sessionPersistence as unknown as {
+      list?: () => Promise<readonly { header: { id: SessionId } }[]>
+      listSnapshots?: () => Promise<readonly { header: { id: SessionId } }[]>
+      open?: (id: SessionId, access: string) => Promise<{
+        read: () => Promise<readonly SessionEvent[]>
+        close: () => Promise<void>
+      }>
+      inspect?: (id: SessionId) => Promise<{ events: readonly SessionEvent[] }>
+    }
+
+    const listFn = anyPersistence.list ?? anyPersistence.listSnapshots
+    if (typeof listFn !== 'function') return
+    const snapshots = await listFn.call(anyPersistence)
     for (const snapshot of snapshots) {
       const id = snapshot.header.id
       if (this.ctx.sessions.get(id) !== undefined) continue
-      const inspection = await sessionPersistence.inspect(id)
-      // Publish the replay cursor before folding: a session may have been
-      // opened while inspect() was in flight, and its live `_sync` starts from
-      // the persisted cursor. If that live fold already consumed the whole log
-      // (it ran before the cursor existed and folded from zero), replaying the
-      // same events would double count them.
-      this.persistedSeq.set(id, inspection.events.length)
+
+      let events: readonly SessionEvent[] = []
+      if (typeof anyPersistence.open === 'function') {
+        const handle = await anyPersistence.open(id, 'read')
+        try {
+          events = await handle.read()
+        } finally {
+          await handle.close()
+        }
+      } else if (typeof anyPersistence.inspect === 'function') {
+        const inspection = await anyPersistence.inspect(id)
+        events = inspection.events
+      }
+
+      this.persistedSeq.set(id, events.length)
       const live = this.ctx.sessions.get(id)
       if (live !== undefined) {
         const liveState = this.states.get(live)
-        if (liveState !== undefined && liveState.consumedEvents >= inspection.events.length) continue
+        if (liveState !== undefined && liveState.consumedEvents >= events.length) continue
       }
       const state: SessionState = { consumedEvents: 0, provider: undefined, model: undefined }
-      for (const event of inspection.events) {
+      for (const event of events) {
         this._foldEvent(id, state, event)
         state.consumedEvents += 1
       }
