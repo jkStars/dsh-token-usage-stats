@@ -326,9 +326,29 @@ export class TokenUsageStats extends Service {
   private readonly requestRecords: RequestRecord[] = []
   private readonly states = new WeakMap<Session, SessionState>()
   private readonly persistedSeq = new Map<SessionId, number>()
+  private readonly persistedRevisions = new Map<SessionId, string>()
   /** Latest folded `session/title` text per session (last-wins). */
   private readonly titles = new Map<SessionId, string>()
   private persistence: SessionPersistence | undefined
+  private lastRehydrateTime = 0
+  private rehydrating: Promise<void> | undefined
+
+  /** Trigger non-blocking background rehydration throttled to at most once per 4 seconds. */
+  private async _scheduleRehydrate(): Promise<void> {
+    const now = Date.now()
+    if (now - this.lastRehydrateTime < 4000 || this.rehydrating !== undefined) {
+      return
+    }
+    this.lastRehydrateTime = now
+    try {
+      this.rehydrating = this._rehydrate()
+      await this.rehydrating
+    } catch {
+      // Ignore background rehydration error
+    } finally {
+      this.rehydrating = undefined
+    }
+  }
 
   constructor(ctx: Context, config: TokenUsageStatsConfig = {}) {
     super(ctx, 'tokenUsageStats')
@@ -376,17 +396,15 @@ export class TokenUsageStats extends Service {
         const removeApi = webCtx.webServer.register({
           kind: 'exact',
           path: '/api/token-usage-stats',
-          handler: async (req, res) => {
+          handler: (req, res) => {
             if (req.method !== 'GET' && req.method !== 'HEAD') {
               res.writeHead(405)
               res.end()
               return
             }
-            try {
-              await this._rehydrate()
-            } catch {
-              // Ignore background read errors
-            }
+            // Trigger background sync without blocking this response
+            void this._scheduleRehydrate()
+
             // node:http always sets url on server requests; `?? '/'` keeps the
             // fallback valid for the optional IncomingMessage.url type.
             const url = new URL(req.url ?? '/', 'http://x')
@@ -570,7 +588,16 @@ export class TokenUsageStats extends Service {
     const snapshots = await listFn.call(anyPersistence)
     for (const snapshot of snapshots) {
       const id = snapshot.header.id
+      const rev = (snapshot as { revision?: unknown }).revision !== undefined
+        ? String((snapshot as { revision?: unknown }).revision)
+        : undefined
+      const lastRev = this.persistedRevisions.get(id)
       const lastSeq = this.persistedSeq.get(id) ?? 0
+
+      // If the revision matches and we already processed this session, skip opening the file completely
+      if (rev !== undefined && lastRev !== undefined && lastRev === rev && lastSeq > 0) {
+        continue
+      }
 
       let events: readonly SessionEvent[] = []
       try {
@@ -587,6 +614,10 @@ export class TokenUsageStats extends Service {
         }
       } catch {
         continue
+      }
+
+      if (rev !== undefined) {
+        this.persistedRevisions.set(id, rev)
       }
 
       if (events.length <= lastSeq) continue
