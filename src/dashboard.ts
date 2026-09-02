@@ -142,47 +142,111 @@ export function renderUsageDashboard(): string {
   tbody tr:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
   .foot { color: var(--muted); font-size: 12px; }
 
-  /* 按钮与通用控件 */
-  .btn-primary {
-    background: var(--accent);
-    color: #fff;
-    border: 1px solid var(--accent);
+  /* 统一 Header 与操作按钮 */
+  .btn-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
     font-weight: 500;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--text);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
   }
-  .btn-primary:hover { opacity: 0.9; }
+  .btn-header:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 6%, var(--panel));
+  }
+  .btn-header .ui-icon {
+    flex-shrink: 0;
+    transition: transform 0.25s ease;
+  }
+  #refresh:hover .ui-icon {
+    transform: rotate(180deg);
+  }
+
   .btn-secondary {
     background: var(--panel);
     color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s ease;
   }
-  .btn-secondary:hover { background: color-mix(in srgb, var(--line) 30%, transparent); }
+  .btn-secondary:hover {
+    background: color-mix(in srgb, var(--line) 30%, transparent);
+  }
+
   .btn-text {
     background: none;
     border: none;
     color: var(--accent);
     padding: 4px 8px;
-    font-size: 13px;
+    font-size: 12px;
     display: inline-flex;
     align-items: center;
     gap: 4px;
     cursor: pointer;
+    font-weight: 500;
+    border-radius: 4px;
+    transition: background 0.15s;
   }
-  .btn-text:hover { text-decoration: underline; }
-  .btn-danger-text {
+  .btn-text:hover {
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+
+  .btn-icon-danger {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     background: none;
-    border: none;
-    color: #ef4444;
-    padding: 4px 6px;
+    border: 1px solid transparent;
+    color: var(--muted);
+    padding: 4px 8px;
+    border-radius: 4px;
     font-size: 12px;
     cursor: pointer;
+    transition: all 0.15s;
   }
-  .btn-danger-text:hover { text-decoration: underline; }
+  .btn-icon-danger:hover {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.25);
+    background: rgba(239, 68, 68, 0.08);
+  }
+
+  .btn-save {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent);
+    color: #ffffff;
+    border: 1px solid transparent;
+    padding: 7px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+    transition: all 0.15s ease;
+  }
+  .btn-save:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+  }
 
   /* 模态框 Modal */
   .modal-backdrop {
     position: fixed;
     inset: 0;
     z-index: 999;
-    background: rgba(0, 0, 0, 0.65);
+    background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(6px);
     display: flex;
     align-items: center;
@@ -199,33 +263,45 @@ export function renderUsageDashboard(): string {
     max-height: 88vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
-    animation: modalIn 0.15s ease-out;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.4);
+    animation: modalIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   }
   @keyframes modalIn {
-    from { opacity: 0; transform: scale(0.97); }
-    to { opacity: 1; transform: scale(1); }
+    from { opacity: 0; transform: scale(0.96) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
   }
   .modal-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    padding: 16px 20px;
+    padding: 16px 22px;
     border-bottom: 1px solid var(--line);
   }
-  .modal-header h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  .modal-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .modal-title-row h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  .modal-subtitle {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+  }
   .modal-close {
     background: none;
     border: none;
-    font-size: 22px;
+    font-size: 20px;
     line-height: 1;
     color: var(--muted);
-    padding: 0 4px;
+    padding: 4px;
+    border-radius: 4px;
     cursor: pointer;
+    transition: all 0.15s;
   }
-  .modal-close:hover { color: var(--text); }
+  .modal-close:hover { color: var(--text); background: var(--line); }
   .modal-body {
-    padding: 20px;
+    padding: 20px 22px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -235,27 +311,32 @@ export function renderUsageDashboard(): string {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 20px;
+    padding: 14px 22px;
     border-top: 1px solid var(--line);
-    background: color-mix(in srgb, var(--panel) 90%, var(--bg));
+    background: color-mix(in srgb, var(--panel) 92%, var(--bg));
     border-bottom-left-radius: 12px;
     border-bottom-right-radius: 12px;
   }
 
   /* 时段与模型配置内部组件 */
   .schedule-box {
-    background: color-mix(in srgb, var(--line) 20%, transparent);
-    border: 1px dashed var(--line);
+    background: color-mix(in srgb, var(--bg) 60%, transparent);
+    border: 1px solid var(--line);
     border-radius: 8px;
-    padding: 12px 16px;
+    padding: 14px 16px;
   }
   .schedule-head {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     font-size: 13px;
     font-weight: 500;
+  }
+  .schedule-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
   .interval-row {
     display: flex;
@@ -265,17 +346,21 @@ export function renderUsageDashboard(): string {
     font-size: 13px;
   }
   .time-input {
-    width: 80px;
+    width: 76px;
     text-align: center;
     padding: 4px 6px;
     font-variant-numeric: tabular-nums;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--panel);
+    color: var(--text);
   }
 
   .model-card {
-    background: color-mix(in srgb, var(--bg) 60%, transparent);
+    background: color-mix(in srgb, var(--bg) 50%, transparent);
     border: 1px solid var(--line);
     border-radius: 8px;
-    padding: 14px;
+    padding: 14px 16px;
     margin-bottom: 12px;
   }
   .model-card-head {
@@ -288,22 +373,46 @@ export function renderUsageDashboard(): string {
   }
   .model-name-input {
     font-weight: 600;
-    font-size: 14px;
+    font-size: 13px;
     width: 220px;
-    padding: 4px 8px;
+    padding: 5px 10px;
     border: 1px solid var(--line);
-    border-radius: 4px;
+    border-radius: 5px;
     background: var(--panel);
     color: var(--text);
   }
-  .tier-mode-toggle {
-    display: flex;
-    gap: 12px;
+  
+  /* 精致分段胶囊控制 Segmented Control */
+  .segmented-control {
+    display: inline-flex;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 2px;
+    gap: 2px;
+  }
+  .segmented-control label {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    margin: 0;
+  }
+  .segmented-control input[type="radio"] {
+    display: none;
+  }
+  .segmented-control .seg-btn {
+    padding: 3px 10px;
     font-size: 12px;
     color: var(--muted);
+    border-radius: 4px;
+    transition: all 0.15s;
+    user-select: none;
   }
-  .tier-mode-toggle label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
-  .tier-mode-toggle input:checked + span { color: var(--accent); font-weight: 600; }
+  .segmented-control input[type="radio"]:checked + .seg-btn {
+    background: var(--accent);
+    color: #ffffff;
+    font-weight: 500;
+  }
 
   .pricing-grids-container {
     display: grid;
@@ -319,16 +428,42 @@ export function renderUsageDashboard(): string {
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: 6px;
-    padding: 10px 12px;
+    padding: 12px 14px;
   }
   .tier-block-title {
     font-size: 12px;
     font-weight: 600;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     display: flex;
     align-items: center;
-    gap: 6px;
   }
+
+  /* 标签徽标 */
+  .tier-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .tier-badge-peak {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.25);
+  }
+  .tier-badge-offpeak {
+    background: rgba(139, 92, 246, 0.12);
+    color: #8b5cf6;
+    border: 1px solid rgba(139, 92, 246, 0.25);
+  }
+  .tier-badge-flat {
+    background: rgba(59, 130, 246, 0.12);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.25);
+  }
+
   .field-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -345,7 +480,7 @@ export function renderUsageDashboard(): string {
   }
   .price-field input {
     width: 100%;
-    padding: 4px 6px;
+    padding: 5px 8px;
     font-variant-numeric: tabular-nums;
     border: 1px solid var(--line);
     border-radius: 4px;
@@ -394,8 +529,22 @@ export function renderUsageDashboard(): string {
     <label>模型
       <select id="model"><option value="">全部</option></select>
     </label>
-    <button id="refresh">刷新</button>
-    <button id="openPricingModal" class="btn-primary" type="button">⚙️ 价格配置</button>
+    <button id="refresh" class="btn-header" type="button" title="刷新数据">
+      <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+        <path d="M3 3v5h5"/>
+        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+        <path d="M16 21h5v-5"/>
+      </svg>
+      <span>刷新</span>
+    </button>
+    <button id="openPricingModal" class="btn-header" type="button" title="配置模型价格与峰谷时段">
+      <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      <span>价格配置</span>
+    </button>
   </div>
 </header>
 <main>
@@ -484,31 +633,57 @@ export function renderUsageDashboard(): string {
 <div id="pricingModal" class="modal-backdrop" hidden>
   <div class="modal-dialog">
     <div class="modal-header">
-      <h2>⚙️ 模型价格策略配置</h2>
+      <div class="modal-title-group">
+        <div class="modal-title-row">
+          <svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          <h2>模型价格策略配置</h2>
+        </div>
+        <p class="modal-subtitle">自定义各模型的 Token 计费单价及高峰/闲时分时规则</p>
+      </div>
       <button type="button" class="modal-close" id="closePricingModal" aria-label="关闭">&times;</button>
     </div>
     <div class="modal-body">
       <div style="display:flex;align-items:center;gap:16px;">
-        <label style="font-weight:600;font-size:13px;">计费货币：</label>
-        <label style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;"><input type="radio" name="pricingCurrency" value="CNY" checked> 人民币 (CNY / ¥)</label>
-        <label style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;"><input type="radio" name="pricingCurrency" value="USD"> 美元 (USD / $)</label>
+        <span style="font-weight:600;font-size:13px;">计费货币：</span>
+        <div class="segmented-control">
+          <label><input type="radio" name="pricingCurrency" value="CNY" checked><span class="seg-btn">人民币 (CNY / ¥)</span></label>
+          <label><input type="radio" name="pricingCurrency" value="USD"><span class="seg-btn">美元 (USD / $)</span></label>
+        </div>
       </div>
 
       <div class="schedule-box">
         <div class="schedule-head">
-          <span>⏰ 峰谷时段规则定义（仅对开启分时计价的模型生效）</span>
-          <label style="cursor:pointer;font-weight:normal;display:inline-flex;align-items:center;gap:4px;">
+          <div class="schedule-title">
+            <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>峰谷分时时段规则（仅对开启分时计价的模型生效）</span>
+          </div>
+          <label style="cursor:pointer;font-weight:normal;display:inline-flex;align-items:center;gap:4px;font-size:12px;">
             <input type="checkbox" id="weekendOffpeak" checked> 周末全天视为闲时
           </label>
         </div>
         <div id="intervalsList"></div>
-        <button type="button" class="btn-text" id="addIntervalBtn" style="margin-top:6px;">➕ 添加高峰时段</button>
+        <button type="button" class="btn-text" id="addIntervalBtn" style="margin-top:6px;">
+          <svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>添加高峰时段</span>
+        </button>
       </div>
 
       <div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-          <h3 style="margin:0;font-size:14px;">模型价格列表（单位：货币 / 百万 Tokens）</h3>
-          <button type="button" class="btn-text" id="addModelBtn">➕ 添加模型配置</button>
+          <h3 style="margin:0;font-size:13px;font-weight:600;">模型计费配置（每 1,000,000 Tokens）</h3>
+          <button type="button" class="btn-text" id="addModelBtn">
+            <svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>添加模型</span>
+          </button>
         </div>
         <div id="modelList"></div>
       </div>
@@ -517,7 +692,12 @@ export function renderUsageDashboard(): string {
       <button type="button" id="resetDefaultBtn" class="btn-secondary">恢复官方默认</button>
       <div style="display:flex;gap:8px;">
         <button type="button" id="cancelPricingBtn" class="btn-secondary">取消</button>
-        <button type="button" id="savePricingBtn" class="btn-primary">💾 保存并立即生效</button>
+        <button type="button" id="savePricingBtn" class="btn-save">
+          <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span>保存并立即生效</span>
+        </button>
       </div>
     </div>
   </div>
@@ -903,11 +1083,16 @@ export function renderUsageDashboard(): string {
     }
     container.innerHTML = intervals.map(function (it, idx) {
       return '<div class="interval-row" data-idx="' + idx + '">'
-        + '<span>高峰时段 ' + (idx + 1) + '：</span>'
+        + '<span style="font-size:12px;color:var(--muted);">时段 ' + (idx + 1) + '：</span>'
         + '<input type="text" class="time-input start-time" value="' + esc(it.start) + '" placeholder="09:00" maxlength="5">'
-        + '<span>至</span>'
+        + '<span style="color:var(--muted);font-size:12px;">至</span>'
         + '<input type="text" class="time-input end-time" value="' + esc(it.end) + '" placeholder="12:00" maxlength="5">'
-        + '<button type="button" class="btn-danger-text del-interval-btn" data-idx="' + idx + '">删除</button>'
+        + '<button type="button" class="btn-icon-danger del-interval-btn" data-idx="' + idx + '" title="删除此时段">'
+        + '  <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        + '    <polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>'
+        + '  </svg>'
+        + '  <span>删除</span>'
+        + '</button>'
         + '</div>'
     }).join('')
 
@@ -938,7 +1123,7 @@ export function renderUsageDashboard(): string {
     var t = tier || {}
     return '<div class="field-grid">'
       + '<div class="price-field"><label>未缓存输入</label><input type="number" step="any" min="0" class="inp-' + prefix + '-uncached" value="' + (t.uncachedInputPerMillion != null ? t.uncachedInputPerMillion : '') + '"></div>'
-      + '<div class="price-field"><label>缓存读取命中</label><input type="number" step="any" min="0" class="inp-' + prefix + '-cache-read" value="' + (t.cacheReadPerMillion != null ? t.cacheReadPerMillion : '') + '"></div>'
+      + '<div class="price-field"><label>缓存命中读取</label><input type="number" step="any" min="0" class="inp-' + prefix + '-cache-read" value="' + (t.cacheReadPerMillion != null ? t.cacheReadPerMillion : '') + '"></div>'
       + '<div class="price-field"><label>缓存写入</label><input type="number" step="any" min="0" class="inp-' + prefix + '-cache-write" value="' + (t.cacheWritePerMillion != null ? t.cacheWritePerMillion : '0') + '"></div>'
       + '<div class="price-field"><label>思考 / 输出</label><input type="number" step="any" min="0" class="inp-' + prefix + '-output" value="' + (t.outputPerMillion != null ? t.outputPerMillion : '') + '"></div>'
       + '</div>'
@@ -948,7 +1133,7 @@ export function renderUsageDashboard(): string {
     var container = $('modelList')
     var entries = Object.entries(pricing)
     if (entries.length === 0) {
-      container.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px 0;">暂无模型配置，点击上方「➕ 添加模型配置」添加</div>'
+      container.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px 0;">暂无模型配置，点击上方「添加模型」添加</div>'
       return
     }
 
@@ -963,24 +1148,45 @@ export function renderUsageDashboard(): string {
       return '<div class="model-card" data-model-idx="' + idx + '">'
         + '<div class="model-card-head">'
         + '  <input type="text" class="model-name-input" value="' + esc(model) + '" placeholder="模型名称 (如 deepseek-chat)">'
-        + '  <div class="tier-mode-toggle">'
-        + '    <label><input type="radio" name="mode_' + idx + '" value="flat" ' + (!isTiered ? 'checked' : '') + '> <span>统一固定价格</span></label>'
-        + '    <label><input type="radio" name="mode_' + idx + '" value="tiered" ' + (isTiered ? 'checked' : '') + '> <span>分时峰谷计价</span></label>'
+        + '  <div class="segmented-control">'
+        + '    <label><input type="radio" name="mode_' + idx + '" value="flat" ' + (!isTiered ? 'checked' : '') + '><span class="seg-btn">统一固定价格</span></label>'
+        + '    <label><input type="radio" name="mode_' + idx + '" value="tiered" ' + (isTiered ? 'checked' : '') + '><span class="seg-btn">分时峰谷计价</span></label>'
         + '  </div>'
-        + '  <button type="button" class="btn-danger-text del-model-btn" data-idx="' + idx + '">删除模型</button>'
+        + '  <button type="button" class="btn-icon-danger del-model-btn" data-idx="' + idx + '" title="删除模型配置">'
+        + '    <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        + '      <polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>'
+        + '    </svg>'
+        + '    <span>删除</span>'
+        + '  </button>'
         + '</div>'
         + '<div class="pricing-grids-container ' + (isTiered ? 'is-split' : '') + '">'
         + (isTiered
           ? ('<div class="tier-block">'
-            + '<div class="tier-block-title">☀️ 高峰时段单价</div>'
+            + '<div class="tier-block-title">'
+            + '  <span class="tier-badge tier-badge-peak">'
+            + '    <svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+            + '      <circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>'
+            + '    </svg>'
+            + '    高峰时段单价'
+            + '  </span>'
+            + '</div>'
             + renderPriceFields('peak', peak)
             + '</div>'
             + '<div class="tier-block">'
-            + '<div class="tier-block-title">🌙 闲时/周末单价</div>'
+            + '<div class="tier-block-title">'
+            + '  <span class="tier-badge tier-badge-offpeak">'
+            + '    <svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+            + '      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>'
+            + '    </svg>'
+            + '    闲时 / 周末单价'
+            + '  </span>'
+            + '</div>'
             + renderPriceFields('offpeak', offpeak)
             + '</div>')
           : ('<div class="tier-block">'
-            + '<div class="tier-block-title">⚡ 全天统一单价</div>'
+            + '<div class="tier-block-title">'
+            + '  <span class="tier-badge tier-badge-flat">全天统一单价</span>'
+            + '</div>'
             + renderPriceFields('flat', flat)
             + '</div>')
         )
