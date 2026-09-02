@@ -34,6 +34,27 @@ export interface ModelPricing extends ModelPriceTier {
   readonly offpeak?: ModelPriceTier
 }
 
+/** One time-of-day interval (inclusive start, exclusive end) in "HH:MM" format. */
+export interface PeakInterval {
+  readonly start: string
+  readonly end: string
+}
+
+/** Configurable peak/off-peak schedule rules. */
+export interface PeakSchedule {
+  /** Whether weekends (Saturday and Sunday, Beijing time) are always off-peak. Defaults to true. */
+  readonly weekendOffpeak?: boolean | undefined
+  /** List of daily peak intervals in Beijing time. Defaults to 09:00-12:00 and 14:00-18:00. */
+  readonly intervals?: readonly PeakInterval[] | undefined
+}
+
+/** Complete pricing settings payload for the API and storage. */
+export interface PricingConfigPayload {
+  readonly currency?: string | undefined
+  readonly peakSchedule?: PeakSchedule | undefined
+  readonly pricing: Record<string, ModelPricing>
+}
+
 /**
  * Token-usage analytics plugin configuration.
  *
@@ -42,9 +63,11 @@ export interface ModelPricing extends ModelPriceTier {
  */
 export interface TokenUsageStatsConfig {
   /** Display currency label for computed costs; omitted when no pricing is configured. */
-  readonly currency?: string
+  readonly currency?: string | undefined
+  /** Optional custom peak/off-peak schedule. */
+  readonly peakSchedule?: Readonly<PeakSchedule> | undefined
   /** Optional per-model price book; keys are provider model ids. */
-  readonly pricing?: Readonly<Record<string, Readonly<ModelPricing>>>
+  readonly pricing?: Readonly<Record<string, Readonly<ModelPricing>>> | undefined
 }
 
 /** Aggregate counters for one model, time bucket, or the whole snapshot. */

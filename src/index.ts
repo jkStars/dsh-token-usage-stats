@@ -14,12 +14,17 @@ import type { Session, SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
 import type { SessionPersistence } from '@deepseek-ai/dsh-session-persistence'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import type {} from '@deepseek-ai/dsh-session-title'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import { renderUsageDashboard } from './dashboard.ts'
 import { parseTokenUsageStatsQuery } from './routes.ts'
 import type {
   ModelPricing,
   ModelPriceTier,
   ModelUsage,
+  PeakInterval,
+  PricingConfigPayload,
   SessionUsage,
   TokenUsageStatsConfig,
   TokenUsageStatsQuery,
@@ -56,10 +61,70 @@ interface SessionState {
   model: string | undefined
 }
 
+/** Parsed minutes range for fast peak comparison. */
+interface ResolvedPeakInterval {
+  readonly start: string
+  readonly end: string
+  readonly startMinutes: number
+  readonly endMinutes: number
+}
+
+interface ResolvedPeakSchedule {
+  readonly weekendOffpeak: boolean
+  readonly intervals: readonly ResolvedPeakInterval[]
+}
+
 /** Validated plugin configuration. */
 interface ResolvedConfig {
   readonly currency?: string
+  readonly peakSchedule: ResolvedPeakSchedule
   readonly pricing: Readonly<Record<string, Readonly<ModelPricing>>>
+}
+
+function getPricingStoragePath(): string {
+  const dshDir = path.join(os.homedir(), '.dsh')
+  if (!existsSync(dshDir)) {
+    try { mkdirSync(dshDir, { recursive: true }) } catch {}
+  }
+  return path.join(dshDir, 'token-usage-pricing.json')
+}
+
+function loadPersistedPricing(): TokenUsageStatsConfig | undefined {
+  try {
+    const file = getPricingStoragePath()
+    if (existsSync(file)) {
+      const raw = readFileSync(file, 'utf8').replace(/^\uFEFF/, '')
+      return JSON.parse(raw) as TokenUsageStatsConfig
+    }
+  } catch (err) {
+    console.error('[token-usage-stats] failed to read token-usage-pricing.json:', err)
+  }
+  return undefined
+}
+
+function savePersistedPricing(payload: PricingConfigPayload): void {
+  const file = getPricingStoragePath()
+  writeFileSync(file, JSON.stringify(payload, null, 2), 'utf8')
+}
+
+const DEFAULT_PEAK_INTERVALS: readonly PeakInterval[] = [
+  { start: '09:00', end: '12:00' },
+  { start: '14:00', end: '18:00' },
+]
+
+function parseTimeString(timeStr: string, field: string): number {
+  if (typeof timeStr !== 'string') {
+    throw new Error(`TokenUsageStatsConfig: peakSchedule interval "${field}" must be a string, got ${typeof timeStr}`)
+  }
+  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(timeStr.trim())
+  if (!match) {
+    throw new Error(`TokenUsageStatsConfig: peakSchedule interval "${field}" must be "HH:MM" (00:00 - 23:59), got "${timeStr}"`)
+  }
+  // oxlint-disable-next-line typescript/no-non-null-assertion
+  const h = Number.parseInt(match[1]!, 10)
+  // oxlint-disable-next-line typescript/no-non-null-assertion
+  const m = Number.parseInt(match[2]!, 10)
+  return h * 60 + m
 }
 
 /** Local mutable face used while building readonly public values. */
@@ -90,7 +155,7 @@ function validateConfig(config: TokenUsageStatsConfig): ResolvedConfig {
   if (typeof config !== 'object' || Array.isArray(config)) {
     throw new Error('TokenUsageStatsConfig: config must be an object')
   }
-  const allowed = new Set(['currency', 'pricing'])
+  const allowed = new Set(['currency', 'pricing', 'peakSchedule'])
   for (const key of Object.keys(config)) {
     if (!allowed.has(key)) {
       throw new Error(`TokenUsageStatsConfig: unknown key "${key}"`)
@@ -100,6 +165,48 @@ function validateConfig(config: TokenUsageStatsConfig): ResolvedConfig {
   const currency = config.currency
   if (currency !== undefined && (typeof currency !== 'string' || currency.length === 0)) {
     throw new Error('TokenUsageStatsConfig: currency must be a non-empty string')
+  }
+
+  let weekendOffpeak = true
+  const intervals: ResolvedPeakInterval[] = []
+  if (config.peakSchedule !== undefined) {
+    if (typeof config.peakSchedule !== 'object' || Array.isArray(config.peakSchedule)) {
+      throw new Error('TokenUsageStatsConfig: peakSchedule must be an object')
+    }
+    if (config.peakSchedule.weekendOffpeak !== undefined) {
+      if (typeof config.peakSchedule.weekendOffpeak !== 'boolean') {
+        throw new Error('TokenUsageStatsConfig: peakSchedule.weekendOffpeak must be a boolean')
+      }
+      weekendOffpeak = config.peakSchedule.weekendOffpeak
+    }
+    const rawIntervals = config.peakSchedule.intervals ?? DEFAULT_PEAK_INTERVALS
+    if (!Array.isArray(rawIntervals)) {
+      throw new Error('TokenUsageStatsConfig: peakSchedule.intervals must be an array')
+    }
+    for (let i = 0; i < rawIntervals.length; i++) {
+      // oxlint-disable-next-line typescript/no-non-null-assertion
+      const item = rawIntervals[i]!
+      if (typeof item !== 'object' || item === null) {
+        throw new Error(`TokenUsageStatsConfig: peakSchedule.intervals[${i}] must be an object`)
+      }
+      const startMinutes = parseTimeString(item.start, `intervals[${i}].start`)
+      const endMinutes = parseTimeString(item.end, `intervals[${i}].end`)
+      intervals.push({
+        start: item.start.trim(),
+        end: item.end.trim(),
+        startMinutes,
+        endMinutes,
+      })
+    }
+  } else {
+    for (const item of DEFAULT_PEAK_INTERVALS) {
+      intervals.push({
+        start: item.start,
+        end: item.end,
+        startMinutes: parseTimeString(item.start, 'default.start'),
+        endMinutes: parseTimeString(item.end, 'default.end'),
+      })
+    }
   }
 
   const parseTier = (value: Readonly<ModelPriceTier>, path: string): Mutable<ModelPriceTier> => {
@@ -174,6 +281,10 @@ function validateConfig(config: TokenUsageStatsConfig): ResolvedConfig {
 
   return deepFreeze({
     ...(currency === undefined ? {} : { currency }),
+    peakSchedule: deepFreeze({
+      weekendOffpeak,
+      intervals: deepFreeze(intervals),
+    }),
     pricing: deepFreeze(pricing),
   })
 }
@@ -209,7 +320,7 @@ export class TokenUsageStats extends Service {
   // validateConfig rejects unknown keys and validates nested pricing manually.
   static Config: z<TokenUsageStatsConfig> = z.object({})
 
-  private readonly config: ResolvedConfig
+  private config: ResolvedConfig
   private readonly usageByStep = new Map<string, number>()
   private readonly usageRecords: UsageRecord[] = []
   private readonly requestRecords: RequestRecord[] = []
@@ -220,7 +331,15 @@ export class TokenUsageStats extends Service {
 
   constructor(ctx: Context, config: TokenUsageStatsConfig = {}) {
     super(ctx, 'tokenUsageStats')
-    this.config = validateConfig(config)
+    const persisted = loadPersistedPricing()
+    const merged = persisted
+      ? {
+          ...config,
+          ...persisted,
+          pricing: { ...(config.pricing ?? {}), ...(persisted.pricing ?? {}) },
+        }
+      : config
+    this.config = validateConfig(merged)
 
     for (const session of ctx.sessions.list()) this._sync(session)
     ctx.inject(['sessionPersistence'], (persistenceCtx) => {
@@ -288,15 +407,85 @@ export class TokenUsageStats extends Service {
             }
           },
         })
+        const removePricingApi = webCtx.webServer.register({
+          kind: 'exact',
+          path: '/api/token-usage-stats/pricing',
+          handler: (req, res) => {
+            if (req.method === 'GET') {
+              res.writeHead(200, {
+                'content-type': 'application/json; charset=utf-8',
+                'cache-control': 'no-store',
+              })
+              res.end(JSON.stringify(this.getPricingConfig()))
+              return
+            }
+            if (req.method === 'POST') {
+              let body = ''
+              req.setEncoding('utf8')
+              req.on('data', (chunk) => {
+                body += chunk
+              })
+              req.on('end', () => {
+                try {
+                  const payload = JSON.parse(body) as PricingConfigPayload
+                  this.updatePricingConfig(payload)
+                  res.writeHead(200, {
+                    'content-type': 'application/json; charset=utf-8',
+                    'cache-control': 'no-store',
+                  })
+                  res.end(JSON.stringify({ ok: true }))
+                } catch (error) {
+                  res.writeHead(400, {
+                    'content-type': 'application/json; charset=utf-8',
+                    'cache-control': 'no-store',
+                  })
+                  res.end(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }))
+                }
+              })
+              return
+            }
+            res.writeHead(405)
+            res.end()
+          },
+        })
         return () => {
           removePage()
           removeApi()
+          removePricingApi()
         }
       }, 'token-usage-stats: dashboard routes')
     })
     ctx.on('session/event', (session) => {
       this._sync(session)
     })
+  }
+
+  /** Return the currently effective pricing settings and schedule. */
+  getPricingConfig(): PricingConfigPayload {
+    const rawPricing: Record<string, ModelPricing> = {}
+    for (const [model, p] of Object.entries(this.config.pricing)) {
+      rawPricing[model] = p
+    }
+    return {
+      ...(this.config.currency === undefined ? {} : { currency: this.config.currency }),
+      peakSchedule: {
+        weekendOffpeak: this.config.peakSchedule.weekendOffpeak,
+        intervals: this.config.peakSchedule.intervals.map(({ start, end }) => ({ start, end })),
+      },
+      pricing: rawPricing,
+    }
+  }
+
+  /** Atomically persist and immediately apply updated pricing rules. */
+  updatePricingConfig(payload: PricingConfigPayload): void {
+    const configToValidate: TokenUsageStatsConfig = {
+      ...(payload.currency === undefined ? {} : { currency: payload.currency }),
+      ...(payload.peakSchedule === undefined ? {} : { peakSchedule: payload.peakSchedule }),
+      pricing: payload.pricing,
+    }
+    const resolved = validateConfig(configToValidate)
+    savePersistedPricing(payload)
+    this.config = resolved
   }
 
   /**
@@ -483,20 +672,25 @@ export class TokenUsageStats extends Service {
   }
 
   /**
-   * True during peak hours: Beijing time 09:00-12:00 and 14:00-18:00.
-   * Weekends (Beijing Saturday/Sunday) are always off-peak; only weekdays
-   * (Monday-Friday) split by time of day. Beijing time is fixed UTC+8 (no
-   * daylight saving), so reading the UTC fields of a +8-shifted epoch yields
-   * the Beijing wall-clock date and hour.
+   * True during configured peak intervals.
+   * Weekends (Beijing Saturday/Sunday) are off-peak when weekendOffpeak is true.
+   * Beijing time is fixed UTC+8, so reading UTC fields of a +8-shifted epoch
+   * yields the Beijing wall-clock date, hour, and minute.
    * @param time - the usage record's time (Unix ms).
    */
   private _isPeak(time: number): boolean {
     const beijing = new Date(time + 8 * 3_600_000)
     const day = beijing.getUTCDay()
-    // 0 = Sunday, 6 = Saturday: whole weekend is off-peak.
-    if (day === 0 || day === 6) return false
-    const hour = beijing.getUTCHours()
-    return (hour >= 9 && hour < 12) || (hour >= 14 && hour < 18)
+    if (this.config.peakSchedule.weekendOffpeak && (day === 0 || day === 6)) {
+      return false
+    }
+    const minutes = beijing.getUTCHours() * 60 + beijing.getUTCMinutes()
+    for (const interval of this.config.peakSchedule.intervals) {
+      if (minutes >= interval.startMinutes && minutes < interval.endMinutes) {
+        return true
+      }
+    }
+    return false
   }
 
   /**

@@ -141,6 +141,236 @@ export function renderUsageDashboard(): string {
   th { color: var(--muted); font-weight: 500; }
   tbody tr:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
   .foot { color: var(--muted); font-size: 12px; }
+
+  /* 按钮与通用控件 */
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border: 1px solid var(--accent);
+    font-weight: 500;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-secondary {
+    background: var(--panel);
+    color: var(--text);
+  }
+  .btn-secondary:hover { background: color-mix(in srgb, var(--line) 30%, transparent); }
+  .btn-text {
+    background: none;
+    border: none;
+    color: var(--accent);
+    padding: 4px 8px;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+  }
+  .btn-text:hover { text-decoration: underline; }
+  .btn-danger-text {
+    background: none;
+    border: none;
+    color: #ef4444;
+    padding: 4px 6px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .btn-danger-text:hover { text-decoration: underline; }
+
+  /* 模态框 Modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-backdrop[hidden] { display: none !important; }
+  .modal-dialog {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 780px;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+    animation: modalIn 0.15s ease-out;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line);
+  }
+  .modal-header h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--muted);
+    padding: 0 4px;
+    cursor: pointer;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-top: 1px solid var(--line);
+    background: color-mix(in srgb, var(--panel) 90%, var(--bg));
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+  }
+
+  /* 时段与模型配置内部组件 */
+  .schedule-box {
+    background: color-mix(in srgb, var(--line) 20%, transparent);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+  .schedule-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .interval-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .time-input {
+    width: 80px;
+    text-align: center;
+    padding: 4px 6px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .model-card {
+    background: color-mix(in srgb, var(--bg) 60%, transparent);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .model-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .model-name-input {
+    font-weight: 600;
+    font-size: 14px;
+    width: 220px;
+    padding: 4px 8px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--panel);
+    color: var(--text);
+  }
+  .tier-mode-toggle {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .tier-mode-toggle label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .tier-mode-toggle input:checked + span { color: var(--accent); font-weight: 600; }
+
+  .pricing-grids-container {
+    display: grid;
+    gap: 12px;
+  }
+  .pricing-grids-container.is-split {
+    grid-template-columns: 1fr 1fr;
+  }
+  @media (max-width: 640px) {
+    .pricing-grids-container.is-split { grid-template-columns: 1fr; }
+  }
+  .tier-block {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+  .tier-block-title {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .price-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .price-field label {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .price-field input {
+    width: 100%;
+    padding: 4px 6px;
+    font-variant-numeric: tabular-nums;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  /* Toast 提示 */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #10b981;
+    color: #ffffff;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    z-index: 1000;
+    animation: toastFade 0.2s ease-out;
+  }
+  .toast.error { background: #ef4444; }
+  .toast[hidden] { display: none !important; }
 </style>
 </head>
 <body>
@@ -165,6 +395,7 @@ export function renderUsageDashboard(): string {
       <select id="model"><option value="">全部</option></select>
     </label>
     <button id="refresh">刷新</button>
+    <button id="openPricingModal" class="btn-primary" type="button">⚙️ 价格配置</button>
   </div>
 </header>
 <main>
@@ -250,6 +481,49 @@ export function renderUsageDashboard(): string {
   <p class="foot">数据来自当前进程内的 <code>ctx.tokenUsageStats</code>，页面自动每 10 秒刷新一次。成本只有在配置了模型定价时才会显示。</p>
 </main>
 
+<div id="pricingModal" class="modal-backdrop" hidden>
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h2>⚙️ 模型价格策略配置</h2>
+      <button type="button" class="modal-close" id="closePricingModal" aria-label="关闭">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;align-items:center;gap:16px;">
+        <label style="font-weight:600;font-size:13px;">计费货币：</label>
+        <label style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;"><input type="radio" name="pricingCurrency" value="CNY" checked> 人民币 (CNY / ¥)</label>
+        <label style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;"><input type="radio" name="pricingCurrency" value="USD"> 美元 (USD / $)</label>
+      </div>
+
+      <div class="schedule-box">
+        <div class="schedule-head">
+          <span>⏰ 峰谷时段规则定义（仅对开启分时计价的模型生效）</span>
+          <label style="cursor:pointer;font-weight:normal;display:inline-flex;align-items:center;gap:4px;">
+            <input type="checkbox" id="weekendOffpeak" checked> 周末全天视为闲时
+          </label>
+        </div>
+        <div id="intervalsList"></div>
+        <button type="button" class="btn-text" id="addIntervalBtn" style="margin-top:6px;">➕ 添加高峰时段</button>
+      </div>
+
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <h3 style="margin:0;font-size:14px;">模型价格列表（单位：货币 / 百万 Tokens）</h3>
+          <button type="button" class="btn-text" id="addModelBtn">➕ 添加模型配置</button>
+        </div>
+        <div id="modelList"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" id="resetDefaultBtn" class="btn-secondary">恢复官方默认</button>
+      <div style="display:flex;gap:8px;">
+        <button type="button" id="cancelPricingBtn" class="btn-secondary">取消</button>
+        <button type="button" id="savePricingBtn" class="btn-primary">💾 保存并立即生效</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast" hidden></div>
+
 <script>
 (function () {
   'use strict'
@@ -260,13 +534,6 @@ export function renderUsageDashboard(): string {
     })
   }
   function number(value) { return Number(value || 0).toLocaleString('en-US') }
-  function compact(value) {
-    var n = Number(value || 0)
-    if (n < 1000) return String(n)
-    if (n < 1000000) return (n / 1000).toFixed(n < 10000 ? 1 : 0) + 'K'
-    if (n < 1000000000) return (n / 1000000).toFixed(n < 10000000 ? 1 : 0) + 'M'
-    return (n / 1000000000).toFixed(1) + 'B'
-  }
   function costText(snapshot, totals) {
     if (totals.cost === undefined) return '未配置定价'
     var prefix = snapshot.currency === 'CNY' ? '¥' : ''
@@ -279,8 +546,6 @@ export function renderUsageDashboard(): string {
     }
     return String(d.getHours()).padStart(2, '0') + ':00'
   }
-  // Tooltip head: one date for the day view (the bucket is a whole day), or a
-  // start ~ end hour range for the hourly view.
   function tooltipHead(p, granularity) {
     var start = bucketLabel(p.startTime, granularity)
     if (granularity === 'day') return start
@@ -298,9 +563,6 @@ export function renderUsageDashboard(): string {
       var label = row[0]
       var value = row[1]
       var pct = total > 0 ? value / max * 100 : 0
-      // A tiny value must stay visible: floor the bar at 0.8% (a visible sliver)
-      // so a dominant category doesn't make the others vanish, and always label
-      // the exact percentage next to the value.
       var width = value > 0 ? Math.max(0.8, pct) : 0
       return '<div class="bar-row">'
         + '<div class="name">' + esc(label) + '</div>'
@@ -310,7 +572,6 @@ export function renderUsageDashboard(): string {
     }).join('')
   }
   function tokenColor(label) {
-    // Blue family matching the provider dashboard tooltip.
     var palette = { '输入（命中缓存）': '#7cb8e8', '输入（未命中缓存）': '#3b82f6', '输出': '#1d4ed8' }
     return palette[label] || '#3b82f6'
   }
@@ -376,98 +637,104 @@ export function renderUsageDashboard(): string {
     })
   }
   function renderModels(snapshot) {
-    var rows = snapshot.models || []
-    $('modelRows').innerHTML = rows.length === 0
-      ? '<tr><td colspan="8" class="empty">暂无模型数据</td></tr>'
-      : rows.map(function (entry) {
-        var t = entry.totals
-        return '<tr>'
-          + '<td>' + esc(entry.model) + '</td>'
-          + '<td>' + esc(entry.provider) + '</td>'
-          + '<td>' + number(t.requestCount) + '</td>'
-          + '<td>' + number(t.uncachedInputTokens) + '</td>'
-          + '<td>' + number(t.cacheReadTokens) + '</td>'
-          + '<td>' + number(t.outputTokens) + '</td>'
-          + '<td>' + number(t.totalTokens) + '</td>'
-          + '<td>' + esc(costText(snapshot, t)) + '</td>'
-          + '</tr>'
-      }).join('')
     var select = $('model')
-    var selected = select.value
-    var options = ['<option value="">全部</option>']
-    rows.forEach(function (entry) {
-      var selectedText = entry.model === selected ? ' selected' : ''
-      options.push('<option value="' + esc(entry.model) + '"' + selectedText + '>' + esc(entry.model) + '</option>')
+    var current = select.value
+    var options = '<option value="">全部</option>'
+    snapshot.models.forEach(function (entry) {
+      var sel = entry.model === current ? ' selected' : ''
+      options += '<option value="' + esc(entry.model) + '"' + sel + '>' + esc(entry.model) + '</option>'
     })
-    select.innerHTML = options.join('')
+    select.innerHTML = options
+
+    var host = $('modelRows')
+    if (!snapshot.models || snapshot.models.length === 0) {
+      host.innerHTML = '<tr><td colspan="8" class="empty">暂无数据</td></tr>'
+      return
+    }
+    host.innerHTML = snapshot.models.map(function (entry) {
+      var t = entry.totals
+      return '<tr>'
+        + '<td style="text-align:left">' + esc(entry.model) + '</td>'
+        + '<td style="text-align:left">' + esc(entry.provider) + '</td>'
+        + '<td>' + number(t.requestCount) + '</td>'
+        + '<td>' + number(t.uncachedInputTokens) + '</td>'
+        + '<td>' + number(t.cacheReadTokens) + '</td>'
+        + '<td>' + number(t.outputTokens) + '</td>'
+        + '<td>' + number(t.totalTokens) + '</td>'
+        + '<td>' + esc(costText(snapshot, t)) + '</td>'
+        + '</tr>'
+    }).join('')
   }
-  function modelColor(model, models) {
-    var palette = ['#f97316', '#ea580c', '#fb923c', '#c2410c', '#fdba74', '#e8590c']
-    var i = models.indexOf(model)
-    return palette[(i < 0 ? 0 : i) % palette.length]
+  function modelColor(index) {
+    var palette = [
+      '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6',
+      '#06b6d4', '#84cc16', '#f97316', '#a855f7', '#14b8a6',
+    ]
+    return palette[index % palette.length]
   }
-  function costPrefix(snapshot) {
-    var c = snapshot.currency
-    return c === 'CNY' ? '¥' : (c ? c + ' ' : '')
-  }
-  // Stacked cost-by-model bars with a hover breakdown, mirroring the provider
-  // dashboard: one bar per bucket, each segment a model's cost, tooltip shows
-  // the bucket range, the total, and each model's contribution.
   function renderCostChart(series, granularity, snapshot) {
     var host = $('costChart')
-    var prefix = costPrefix(snapshot)
     $('costCurrency').textContent = snapshot.currency || 'CNY'
-    if (!series || series.length === 0) { host.innerHTML = '<div class="empty">当前范围暂无数据</div>'; return }
-    var models = []
-    var hasCost = false
-    series.forEach(function (p) {
-      (p.models || []).forEach(function (m) {
-        if (models.indexOf(m.model) === -1) models.push(m.model)
-        if (m.cost > 0) hasCost = true
-      })
-    })
-    if (!hasCost) { host.innerHTML = '<div class="empty">当前范围暂无消费</div>'; return }
+    if (!series || series.length === 0) {
+      host.innerHTML = '<div class="empty">当前范围暂无数据</div>'
+      return
+    }
+    var hasCost = series.some(function (p) { return p.totals.cost !== undefined && p.totals.cost > 0 })
+    if (!hasCost) {
+      host.innerHTML = '<div class="empty">当前范围未产生费用（或未配置模型定价）</div>'
+      return
+    }
     var width = 900
     var height = 220
     var padX = 44
     var padY = 22
-    var max = Math.max.apply(null, series.map(function (p) { return p.totals.cost || 0 }))
-    if (!(max > 0)) max = 1
-    var step = (width - padX * 2) / Math.max(1, series.length - 1)
-    var barWidth = Math.min(step * 0.62, 48)
-    var labelEvery = Math.max(1, Math.ceil(series.length / 12))
-    var bars = []
-    var labels = []
-    series.forEach(function (p, index) {
-      var x = padX + step * index
-      var yCursor = height - padY
-      var segs = (p.models || []).map(function (m) {
-        var h = (m.cost || 0) / max * (height - padY * 2)
-        var y = yCursor - h
-        yCursor = y
-        return '<rect class="bar" data-index="' + index + '" x="' + (x - barWidth/2).toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + barWidth.toFixed(1) + '" height="' + (h < 0.5 ? 0.5 : h).toFixed(1) + '" rx="2" style="fill:' + modelColor(m.model, models) + '"></rect>'
-      }).join('')
-      bars.push(segs)
-      if (index % labelEvery === 0) {
-        labels.push('<text x="' + x.toFixed(1) + '" y="' + (height - 5) + '" text-anchor="middle" fill="var(--muted)" font-size="10">' + esc(bucketLabel(p.startTime, granularity)) + '</text>')
-      }
+    var modelColorMap = {}
+    var colorIndex = 0
+    series.forEach(function (p) {
+      (p.models || []).forEach(function (m) {
+        if (modelColorMap[m.model] === undefined) {
+          modelColorMap[m.model] = modelColor(colorIndex++)
+        }
+      })
     })
+    var max = Math.max.apply(null, series.map(function (p) { return p.totals.cost || 0 }))
+    if (max <= 0) max = 1
+    var step = (width - padX * 2) / Math.max(1, series.length - 1)
+    var barWidth = Math.min(step * 0.72, 48)
+    var bars = series.map(function (point, index) {
+      var x = padX + step * index - barWidth / 2
+      var stackY = height - padY
+      var segments = (point.models || []).filter(function (m) { return m.cost > 0 }).map(function (m) {
+        var segHeight = (m.cost / max) * (height - padY * 2)
+        stackY -= segHeight
+        return '<rect class="bar" data-index="' + index + '" x="' + x.toFixed(1) + '" y="' + stackY.toFixed(1) + '" width="' + barWidth.toFixed(1) + '" height="' + Math.max(0.5, segHeight).toFixed(1) + '" fill="' + modelColorMap[m.model] + '" rx="1"></rect>'
+      }).join('')
+      return segments
+    }).join('')
+    var labelEvery = Math.max(1, Math.ceil(series.length / 12))
+    var labels = series.filter(function (_, index) { return index % labelEvery === 0 }).map(function (p, index) {
+      var origIndex = index * labelEvery
+      var x = padX + step * origIndex
+      return '<text x="' + x.toFixed(1) + '" y="' + (height - 5) + '" text-anchor="middle" fill="var(--muted)" font-size="10">'
+        + esc(bucketLabel(p.startTime, granularity)) + '</text>'
+    }).join('')
     host.innerHTML = '<div class="chart-wrap">'
       + '<svg viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="消费金额趋势">'
       + '<line class="axis" x1="' + padX + '" y1="' + (height - padY) + '" x2="' + (width - padX) + '" y2="' + (height - padY) + '"></line>'
-      + bars.join('') + labels.join('') + '</svg>'
+      + bars + labels + '</svg>'
       + '<div class="chart-tip" id="costTip"></div></div>'
     var wrap = host.querySelector('.chart-wrap')
     var tip = $('costTip')
+    var prefix = snapshot.currency === 'CNY' ? '¥' : ''
     function showTip(index) {
       var p = series[index]
       var head = tooltipHead(p, granularity)
       var total = p.totals.cost || 0
-      var rows = (p.models || []).map(function (m) {
-        return '<div class="tip-row"><span class="dot" style="background:' + modelColor(m.model, models) + '"></span>'
-          + esc(m.model) + '<span class="tip-val">' + prefix + number(m.cost) + '</span></div>'
+      var rows = (p.models || []).filter(function (m) { return m.cost > 0 }).map(function (m) {
+        return '<div class="tip-row"><span class="dot" style="background:' + modelColorMap[m.model] + '"></span>'
+          + esc(m.model) + '<span class="tip-val">' + prefix + m.cost.toFixed(4) + '</span></div>'
       }).join('')
-      tip.innerHTML = '<div class="tip-head"><span>' + esc(head) + '</span><span>' + prefix + number(total) + '</span></div>' + rows
+      tip.innerHTML = '<div class="tip-head"><span>' + esc(head) + '</span><span>' + prefix + Number(total).toFixed(4) + '</span></div>' + rows
       tip.style.opacity = '1'
     }
     Array.prototype.forEach.call(host.querySelectorAll('rect.bar'), function (rect) {
@@ -538,9 +805,6 @@ export function renderUsageDashboard(): string {
   function rangeParams() {
     var range = $('range').value
     if (range === 'all') return new URLSearchParams()
-    // Local midnight of today (or two/six days ago for the 3/7-day windows);
-    // the service buckets on UTC-aligned hours, which align with whole-hour
-    // local offsets, so the chart's hour labels match the user's clock.
     var from = new Date()
     from.setHours(0, 0, 0, 0)
     if (range === '3d') from.setDate(from.getDate() - 2)
@@ -548,9 +812,6 @@ export function renderUsageDashboard(): string {
     return new URLSearchParams({ from: String(from.getTime()) })
   }
   var rangeForcedDay = false
-  // When the range is 近 7 天 or 全部, hourly buckets across many days are
-  // unreadable, so force the daily view and disable the hourly option;
-  // leaving those ranges restores the hourly default.
   function syncGranularity() {
     var g = $('granularity')
     var range = $('range').value
@@ -584,6 +845,305 @@ export function renderUsageDashboard(): string {
       console.error(error)
     }
   }
+
+  // --- 价格配置 Modal 控制逻辑 ---
+  var defaultPricingConfig = {
+    currency: 'CNY',
+    peakSchedule: {
+      weekendOffpeak: true,
+      intervals: [
+        { start: '09:00', end: '12:00' },
+        { start: '14:00', end: '18:00' }
+      ]
+    },
+    pricing: {
+      'deepseek-v4-flash': {
+        peak: {
+          uncachedInputPerMillion: 3.0,
+          cacheReadPerMillion: 0.1,
+          cacheWritePerMillion: 0,
+          outputPerMillion: 9.0
+        },
+        offpeak: {
+          uncachedInputPerMillion: 1.5,
+          cacheReadPerMillion: 0.05,
+          cacheWritePerMillion: 0,
+          outputPerMillion: 4.5
+        }
+      },
+      'deepseek-chat': {
+        uncachedInputPerMillion: 2.0,
+        cacheReadPerMillion: 0.5,
+        cacheWritePerMillion: 0,
+        outputPerMillion: 8.0
+      },
+      'deepseek-reasoner': {
+        uncachedInputPerMillion: 4.0,
+        cacheReadPerMillion: 1.0,
+        cacheWritePerMillion: 0,
+        outputPerMillion: 16.0
+      }
+    }
+  }
+
+  function showToast(msg, isError) {
+    var t = $('toast')
+    t.textContent = msg
+    t.className = isError ? 'toast error' : 'toast'
+    t.hidden = false
+    clearTimeout(t._timer)
+    t._timer = setTimeout(function () { t.hidden = true }, 2800)
+  }
+
+  function renderIntervals(intervals) {
+    var container = $('intervalsList')
+    if (!intervals || intervals.length === 0) {
+      container.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:6px 0;">当前未设置高峰时段（全天按闲时计费）</div>'
+      return
+    }
+    container.innerHTML = intervals.map(function (it, idx) {
+      return '<div class="interval-row" data-idx="' + idx + '">'
+        + '<span>高峰时段 ' + (idx + 1) + '：</span>'
+        + '<input type="text" class="time-input start-time" value="' + esc(it.start) + '" placeholder="09:00" maxlength="5">'
+        + '<span>至</span>'
+        + '<input type="text" class="time-input end-time" value="' + esc(it.end) + '" placeholder="12:00" maxlength="5">'
+        + '<button type="button" class="btn-danger-text del-interval-btn" data-idx="' + idx + '">删除</button>'
+        + '</div>'
+    }).join('')
+
+    container.querySelectorAll('.del-interval-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var idx = parseInt(btn.getAttribute('data-idx'), 10)
+        var list = collectIntervals()
+        list.splice(idx, 1)
+        renderIntervals(list)
+      })
+    })
+  }
+
+  function collectIntervals() {
+    var rows = document.querySelectorAll('#intervalsList .interval-row')
+    var result = []
+    rows.forEach(function (row) {
+      var start = row.querySelector('.start-time').value.trim()
+      var end = row.querySelector('.end-time').value.trim()
+      if (start && end) {
+        result.push({ start: start, end: end })
+      }
+    })
+    return result
+  }
+
+  function renderPriceFields(prefix, tier) {
+    var t = tier || {}
+    return '<div class="field-grid">'
+      + '<div class="price-field"><label>未缓存输入</label><input type="number" step="any" min="0" class="inp-' + prefix + '-uncached" value="' + (t.uncachedInputPerMillion != null ? t.uncachedInputPerMillion : '') + '"></div>'
+      + '<div class="price-field"><label>缓存读取命中</label><input type="number" step="any" min="0" class="inp-' + prefix + '-cache-read" value="' + (t.cacheReadPerMillion != null ? t.cacheReadPerMillion : '') + '"></div>'
+      + '<div class="price-field"><label>缓存写入</label><input type="number" step="any" min="0" class="inp-' + prefix + '-cache-write" value="' + (t.cacheWritePerMillion != null ? t.cacheWritePerMillion : '0') + '"></div>'
+      + '<div class="price-field"><label>思考 / 输出</label><input type="number" step="any" min="0" class="inp-' + prefix + '-output" value="' + (t.outputPerMillion != null ? t.outputPerMillion : '') + '"></div>'
+      + '</div>'
+  }
+
+  function renderModelCards(pricing) {
+    var container = $('modelList')
+    var entries = Object.entries(pricing)
+    if (entries.length === 0) {
+      container.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px 0;">暂无模型配置，点击上方「➕ 添加模型配置」添加</div>'
+      return
+    }
+
+    container.innerHTML = entries.map(function (item, idx) {
+      var model = item[0]
+      var val = item[1] || {}
+      var isTiered = !!(val.peak || val.offpeak)
+      var flat = !isTiered ? val : (val.peak || {})
+      var peak = val.peak || {}
+      var offpeak = val.offpeak || {}
+
+      return '<div class="model-card" data-model-idx="' + idx + '">'
+        + '<div class="model-card-head">'
+        + '  <input type="text" class="model-name-input" value="' + esc(model) + '" placeholder="模型名称 (如 deepseek-chat)">'
+        + '  <div class="tier-mode-toggle">'
+        + '    <label><input type="radio" name="mode_' + idx + '" value="flat" ' + (!isTiered ? 'checked' : '') + '> <span>统一固定价格</span></label>'
+        + '    <label><input type="radio" name="mode_' + idx + '" value="tiered" ' + (isTiered ? 'checked' : '') + '> <span>分时峰谷计价</span></label>'
+        + '  </div>'
+        + '  <button type="button" class="btn-danger-text del-model-btn" data-idx="' + idx + '">删除模型</button>'
+        + '</div>'
+        + '<div class="pricing-grids-container ' + (isTiered ? 'is-split' : '') + '">'
+        + (isTiered
+          ? ('<div class="tier-block">'
+            + '<div class="tier-block-title">☀️ 高峰时段单价</div>'
+            + renderPriceFields('peak', peak)
+            + '</div>'
+            + '<div class="tier-block">'
+            + '<div class="tier-block-title">🌙 闲时/周末单价</div>'
+            + renderPriceFields('offpeak', offpeak)
+            + '</div>')
+          : ('<div class="tier-block">'
+            + '<div class="tier-block-title">⚡ 全天统一单价</div>'
+            + renderPriceFields('flat', flat)
+            + '</div>')
+        )
+        + '</div>'
+        + '</div>'
+    }).join('')
+
+    container.querySelectorAll('.del-model-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var idx = parseInt(btn.getAttribute('data-idx'), 10)
+        var list = collectPricing()
+        delete list[Object.keys(list)[idx]]
+        renderModelCards(list)
+      })
+    })
+
+    container.querySelectorAll('.model-card').forEach(function (card) {
+      var radios = card.querySelectorAll('.tier-mode-toggle input[type="radio"]')
+      radios.forEach(function (r) {
+        r.addEventListener('change', function () {
+          var p = collectPricing()
+          renderModelCards(p)
+        })
+      })
+    })
+  }
+
+  function collectTierFromFields(card, prefix) {
+    var uncached = parseFloat(card.querySelector('.inp-' + prefix + '-uncached') ? card.querySelector('.inp-' + prefix + '-uncached').value : NaN)
+    var cacheRead = parseFloat(card.querySelector('.inp-' + prefix + '-cache-read') ? card.querySelector('.inp-' + prefix + '-cache-read').value : NaN)
+    var cacheWrite = parseFloat(card.querySelector('.inp-' + prefix + '-cache-write') ? card.querySelector('.inp-' + prefix + '-cache-write').value : NaN)
+    var output = parseFloat(card.querySelector('.inp-' + prefix + '-output') ? card.querySelector('.inp-' + prefix + '-output').value : NaN)
+    var res = {}
+    if (!isNaN(uncached)) res.uncachedInputPerMillion = uncached
+    if (!isNaN(cacheRead)) res.cacheReadPerMillion = cacheRead
+    if (!isNaN(cacheWrite)) res.cacheWritePerMillion = cacheWrite
+    if (!isNaN(output)) res.outputPerMillion = output
+    return res
+  }
+
+  function collectPricing() {
+    var cards = document.querySelectorAll('#modelList .model-card')
+    var result = {}
+    cards.forEach(function (card) {
+      var name = card.querySelector('.model-name-input').value.trim()
+      if (!name) return
+      var modeRadio = card.querySelector('.tier-mode-toggle input:checked')
+      var mode = modeRadio ? modeRadio.value : 'flat'
+      if (mode === 'tiered') {
+        result[name] = {
+          peak: collectTierFromFields(card, 'peak'),
+          offpeak: collectTierFromFields(card, 'offpeak'),
+        }
+      } else {
+        result[name] = collectTierFromFields(card, 'flat')
+      }
+    })
+    return result
+  }
+
+  async function openPricingModal() {
+    try {
+      var resp = await fetch('/api/token-usage-stats/pricing', { cache: 'no-store' })
+      var data = resp.ok ? await resp.json() : defaultPricingConfig
+      populateModalForm(data)
+      $('pricingModal').hidden = false
+    } catch (e) {
+      populateModalForm(defaultPricingConfig)
+      $('pricingModal').hidden = false
+    }
+  }
+
+  function closePricingModal() {
+    $('pricingModal').hidden = true
+  }
+
+  function populateModalForm(data) {
+    var curr = data.currency || 'CNY'
+    var radios = document.querySelectorAll('input[name="pricingCurrency"]')
+    radios.forEach(function (r) { r.checked = (r.value === curr) })
+
+    var ps = data.peakSchedule || defaultPricingConfig.peakSchedule
+    $('weekendOffpeak').checked = ps.weekendOffpeak !== false
+    renderIntervals(ps.intervals || defaultPricingConfig.peakSchedule.intervals)
+
+    var pricing = data.pricing || defaultPricingConfig.pricing
+    renderModelCards(pricing)
+  }
+
+  $('addIntervalBtn').addEventListener('click', function () {
+    var list = collectIntervals()
+    list.push({ start: '09:00', end: '12:00' })
+    renderIntervals(list)
+  })
+
+  $('addModelBtn').addEventListener('click', function () {
+    var list = collectPricing()
+    var newKey = 'custom-model-' + (Object.keys(list).length + 1)
+    list[newKey] = {
+      uncachedInputPerMillion: 2.0,
+      cacheReadPerMillion: 0.5,
+      cacheWritePerMillion: 0,
+      outputPerMillion: 8.0,
+    }
+    renderModelCards(list)
+  })
+
+  $('resetDefaultBtn').addEventListener('click', function () {
+    if (confirm('确认恢复官方默认价格与时段配置吗？')) {
+      populateModalForm(defaultPricingConfig)
+    }
+  })
+
+  $('savePricingBtn').addEventListener('click', async function () {
+    var currencyRadio = document.querySelector('input[name="pricingCurrency"]:checked')
+    var currency = currencyRadio ? currencyRadio.value : 'CNY'
+    var weekendOffpeak = $('weekendOffpeak').checked
+    var intervals = collectIntervals()
+
+    var timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/
+    for (var i = 0; i < intervals.length; i++) {
+      if (!timeRegex.test(intervals[i].start) || !timeRegex.test(intervals[i].end)) {
+        showToast('高峰时段格式必须为 HH:MM (例如 09:00)', true)
+        return
+      }
+    }
+
+    var pricing = collectPricing()
+    var payload = {
+      currency: currency,
+      peakSchedule: {
+        weekendOffpeak: weekendOffpeak,
+        intervals: intervals
+      },
+      pricing: pricing
+    }
+
+    try {
+      var resp = await fetch('/api/token-usage-stats/pricing', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      var res = await resp.json()
+      if (res.ok) {
+        showToast('✅ 价格策略已保存并立即生效！', false)
+        closePricingModal()
+        load()
+      } else {
+        showToast('保存失败：' + (res.error || '未知错误'), true)
+      }
+    } catch (err) {
+      showToast('网络保存失败：' + String(err), true)
+    }
+  })
+
+  $('openPricingModal').addEventListener('click', openPricingModal)
+  $('closePricingModal').addEventListener('click', closePricingModal)
+  $('cancelPricingBtn').addEventListener('click', closePricingModal)
+  $('pricingModal').addEventListener('click', function (e) {
+    if (e.target === $('pricingModal')) closePricingModal()
+  })
+
   initChartTabs()
   $('refresh').addEventListener('click', load)
   $('range').addEventListener('change', load)
