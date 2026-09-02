@@ -101,7 +101,7 @@ export function renderUsageDashboard(): string {
     font-weight: 600;
   }
   .chart-panel[hidden] { display: none; }
-  svg { width: 100%; height: 230px; display: block; }
+  .chart svg { width: 100%; height: 230px; display: block; }
   .axis { stroke: var(--line); }
   .axis text { fill: var(--muted); font-size: 10px; }
   .bar { fill: var(--accent); }
@@ -143,11 +143,41 @@ export function renderUsageDashboard(): string {
   .foot { color: var(--muted); font-size: 12px; }
 
   /* 统一 Header 与操作按钮 */
+  .ui-icon {
+    width: 14px !important;
+    height: 14px !important;
+    min-width: 14px;
+    min-height: 14px;
+    max-width: 14px;
+    max-height: 14px;
+    display: inline-block !important;
+    vertical-align: middle;
+    flex-shrink: 0;
+  }
+  .modal-title-row .ui-icon {
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px;
+    min-height: 18px;
+    max-width: 18px;
+    max-height: 18px;
+  }
+  .btn-text .ui-icon, .btn-icon-danger .ui-icon, .tier-badge .ui-icon {
+    width: 12px !important;
+    height: 12px !important;
+    min-width: 12px;
+    min-height: 12px;
+    max-width: 12px;
+    max-height: 12px;
+  }
+
   .btn-header {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
-    padding: 6px 12px;
+    height: 32px;
+    padding: 0 12px;
     font-size: 13px;
     font-weight: 500;
     border: 1px solid var(--line);
@@ -155,6 +185,7 @@ export function renderUsageDashboard(): string {
     color: var(--text);
     border-radius: 6px;
     cursor: pointer;
+    white-space: nowrap;
     transition: all 0.15s ease;
   }
   .btn-header:hover {
@@ -163,7 +194,6 @@ export function renderUsageDashboard(): string {
     background: color-mix(in srgb, var(--accent) 6%, var(--panel));
   }
   .btn-header .ui-icon {
-    flex-shrink: 0;
     transition: transform 0.25s ease;
   }
   #refresh:hover .ui-icon {
@@ -178,6 +208,7 @@ export function renderUsageDashboard(): string {
     padding: 6px 14px;
     font-size: 13px;
     cursor: pointer;
+    white-space: nowrap;
     transition: all 0.15s ease;
   }
   .btn-secondary:hover {
