@@ -1204,7 +1204,7 @@ export function renderUsageDashboard(): string {
     })
 
     container.querySelectorAll('.model-card').forEach(function (card) {
-      var radios = card.querySelectorAll('.tier-mode-toggle input[type="radio"]')
+      var radios = card.querySelectorAll('.segmented-control input[type="radio"], .tier-mode-toggle input[type="radio"]')
       radios.forEach(function (r) {
         r.addEventListener('change', function () {
           var p = collectPricing()
@@ -1233,7 +1233,7 @@ export function renderUsageDashboard(): string {
     cards.forEach(function (card) {
       var name = card.querySelector('.model-name-input').value.trim()
       if (!name) return
-      var modeRadio = card.querySelector('.tier-mode-toggle input:checked')
+      var modeRadio = card.querySelector('.segmented-control input:checked, .tier-mode-toggle input:checked')
       var mode = modeRadio ? modeRadio.value : 'flat'
       if (mode === 'tiered') {
         result[name] = {
@@ -1285,13 +1285,31 @@ export function renderUsageDashboard(): string {
   $('addModelBtn').addEventListener('click', function () {
     var list = collectPricing()
     var newKey = 'custom-model-' + (Object.keys(list).length + 1)
-    list[newKey] = {
+    var newEntry = {
       uncachedInputPerMillion: 2.0,
       cacheReadPerMillion: 0.5,
       cacheWritePerMillion: 0,
       outputPerMillion: 8.0,
     }
-    renderModelCards(list)
+    // 将新添加的模型排在最前面
+    var updated = {}
+    updated[newKey] = newEntry
+    for (var k in list) {
+      if (Object.prototype.hasOwnProperty.call(list, k)) {
+        updated[k] = list[k]
+      }
+    }
+    renderModelCards(updated)
+
+    // 自动聚焦新模型卡片的输入框并全选名称，提升输入体验
+    setTimeout(function () {
+      var firstInput = document.querySelector('#modelList .model-card:first-child .model-name-input')
+      if (firstInput) {
+        firstInput.focus()
+        firstInput.select()
+        firstInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 40)
   })
 
   $('resetDefaultBtn').addEventListener('click', function () {
