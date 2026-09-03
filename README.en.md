@@ -27,7 +27,7 @@ DSH web plugin: cross-session token usage, request count, and optional cost anal
 ## Install
 
 ```sh
-dsh plugin --profile web add dsh-token-usage-stats@0.3.6
+dsh plugin --profile web add dsh-token-usage-stats@0.3.7
 ```
 
 The package's `cordis.patch.yml` inserts the plugin row; the browser half loads from the `dsh.client` manifest. Restart the host (or reload the GUI) after installing.

@@ -1,6 +1,6 @@
 {
   "name": "dsh-token-usage-stats",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "DSH web plugin: cross-session token usage, request count, and optional cost analytics (ctx.tokenUsageStats), with a self-contained dashboard page and a sidebar footer entry.",
   "type": "module",
   "main": "lib/index.js",

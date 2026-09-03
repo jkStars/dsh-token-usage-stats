@@ -112,11 +112,12 @@ const DEFAULT_PEAK_INTERVALS: readonly PeakInterval[] = [
   { start: '14:00', end: '18:00' },
 ]
 
-function parseTimeString(timeStr: string, field: string): number {
+function parseTimeString(timeStr: string, field: string): { minutes: number; formatted: string } {
   if (typeof timeStr !== 'string') {
     throw new Error(`TokenUsageStatsConfig: peakSchedule interval "${field}" must be a string, got ${typeof timeStr}`)
   }
-  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(timeStr.trim())
+  const clean = timeStr.replace(/：/g, ':').trim().replace(/\s+/g, '')
+  const match = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(clean)
   if (!match) {
     throw new Error(`TokenUsageStatsConfig: peakSchedule interval "${field}" must be "HH:MM" (00:00 - 23:59), got "${timeStr}"`)
   }
@@ -124,7 +125,8 @@ function parseTimeString(timeStr: string, field: string): number {
   const h = Number.parseInt(match[1]!, 10)
   // oxlint-disable-next-line typescript/no-non-null-assertion
   const m = Number.parseInt(match[2]!, 10)
-  return h * 60 + m
+  const formatted = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  return { minutes: h * 60 + m, formatted }
 }
 
 /** Local mutable face used while building readonly public values. */
@@ -189,13 +191,13 @@ function validateConfig(config: TokenUsageStatsConfig): ResolvedConfig {
       if (typeof item !== 'object' || item === null) {
         throw new Error(`TokenUsageStatsConfig: peakSchedule.intervals[${i}] must be an object`)
       }
-      const startMinutes = parseTimeString(item.start, `intervals[${i}].start`)
-      const endMinutes = parseTimeString(item.end, `intervals[${i}].end`)
+      const parsedStart = parseTimeString(item.start, `intervals[${i}].start`)
+      const parsedEnd = parseTimeString(item.end, `intervals[${i}].end`)
       intervals.push({
-        start: item.start.trim(),
-        end: item.end.trim(),
-        startMinutes,
-        endMinutes,
+        start: parsedStart.formatted,
+        end: parsedEnd.formatted,
+        startMinutes: parsedStart.minutes,
+        endMinutes: parsedEnd.minutes,
       })
     }
   } else {
@@ -203,8 +205,8 @@ function validateConfig(config: TokenUsageStatsConfig): ResolvedConfig {
       intervals.push({
         start: item.start,
         end: item.end,
-        startMinutes: parseTimeString(item.start, 'default.start'),
-        endMinutes: parseTimeString(item.end, 'default.end'),
+        startMinutes: parseTimeString(item.start, 'default.start').minutes,
+        endMinutes: parseTimeString(item.end, 'default.end').minutes,
       })
     }
   }

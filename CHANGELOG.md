@@ -1,9 +1,18 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.7] - 2026-09-03
+
+### 🐛 问题修复与体验强化 (Bug Fixes & UX)
+- **时段格式智能容错**：输入高峰时段支持自动纠错与补全，支持单数字小时（如 `9:00` 自动转为 `09:00`）、全角中文冒号（如 `14：00` 自动转为 `14:00`），失焦即时标准化。
+- **精准错误定位与动效高亮**：时段输入错误时，自动给具体出错的输入框添加红框样式（`.input-invalid`），并平滑滚动视口、自动聚焦并全选出错文本，彻底消除与操作脱节的迷惑感。
+- **空白时段智能忽略**：被用户清空的时段行平滑跳过，不再因误触清空触发无谓的错误校验。
+- **纯固定价格模型友好兼容**：前后端全面增强宽容度，在未启用分时计价的场景下不再被时段严格约束阻断保存。
+
+---
 ## [0.3.6] - 2026-09-03
 
 ### 🚀 性能优化 (Performance)
@@ -52,3 +61,4 @@ All notable changes to this project will be documented in this file.
 - DSH Token Usage Stats Web 插件基础骨架。
 - 跨会话日志回放、Token 统计与聚合计算。
 - 提供 `/token-usage-stats` 仪表盘与 `/api/token-usage-stats` 数据接口。
+

@@ -385,6 +385,13 @@ export function renderUsageDashboard(): string {
     border-radius: 4px;
     background: var(--panel);
     color: var(--text);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .time-input.input-invalid,
+  .model-name-input.input-invalid {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25) !important;
+    background-color: rgba(239, 68, 68, 0.05) !important;
   }
 
   .model-card {
@@ -1134,6 +1141,26 @@ export function renderUsageDashboard(): string {
     t._timer = setTimeout(function () { t.hidden = true }, 2800)
   }
 
+  function normalizeTime(str) {
+    if (!str) return null
+    var s = String(str).replace(/：/g, ':').trim().replace(/\s+/g, '')
+    if (!s) return null
+    var parts = s.split(':')
+    if (parts.length === 1) {
+      var h = parseInt(parts[0], 10)
+      if (!isNaN(h) && h >= 0 && h <= 23) {
+        return String(h).padStart(2, '0') + ':00'
+      }
+    } else if (parts.length === 2) {
+      var h = parseInt(parts[0], 10)
+      var m = parseInt(parts[1], 10)
+      if (!isNaN(h) && h >= 0 && h <= 23 && !isNaN(m) && m >= 0 && m <= 59) {
+        return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0')
+      }
+    }
+    return null
+  }
+
   function renderIntervals(intervals) {
     var container = $('intervalsList')
     if (!intervals || intervals.length === 0) {
@@ -1155,12 +1182,32 @@ export function renderUsageDashboard(): string {
         + '</div>'
     }).join('')
 
+    // 绑定删除按钮
     container.querySelectorAll('.del-interval-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var idx = parseInt(btn.getAttribute('data-idx'), 10)
-        var list = collectIntervals()
-        list.splice(idx, 1)
-        renderIntervals(list)
+        var res = collectIntervals()
+        res.intervals.splice(idx, 1)
+        renderIntervals(res.intervals)
+      })
+    })
+
+    // 绑定时段输入框失焦自动规范化
+    container.querySelectorAll('.time-input').forEach(function (inp) {
+      inp.addEventListener('blur', function () {
+        var val = inp.value.trim()
+        if (!val) {
+          inp.classList.remove('input-invalid')
+          return
+        }
+        var norm = normalizeTime(val)
+        if (norm) {
+          inp.value = norm
+          inp.classList.remove('input-invalid')
+        }
+      })
+      inp.addEventListener('input', function () {
+        inp.classList.remove('input-invalid')
       })
     })
   }
@@ -1168,14 +1215,41 @@ export function renderUsageDashboard(): string {
   function collectIntervals() {
     var rows = document.querySelectorAll('#intervalsList .interval-row')
     var result = []
+    var hasInvalid = false
     rows.forEach(function (row) {
-      var start = row.querySelector('.start-time').value.trim()
-      var end = row.querySelector('.end-time').value.trim()
-      if (start && end) {
-        result.push({ start: start, end: end })
+      var startInput = row.querySelector('.start-time')
+      var endInput = row.querySelector('.end-time')
+      startInput.classList.remove('input-invalid')
+      endInput.classList.remove('input-invalid')
+
+      var rawStart = startInput.value.trim()
+      var rawEnd = endInput.value.trim()
+
+      // 若整行均留空，视作用户已清空该时段，平滑忽略不报错
+      if (!rawStart && !rawEnd) return
+
+      var normStart = normalizeTime(rawStart)
+      var normEnd = normalizeTime(rawEnd)
+
+      if (!normStart) {
+        startInput.classList.add('input-invalid')
+        hasInvalid = true
+      } else {
+        startInput.value = normStart
+      }
+
+      if (!normEnd) {
+        endInput.classList.add('input-invalid')
+        hasInvalid = true
+      } else {
+        endInput.value = normEnd
+      }
+
+      if (normStart && normEnd) {
+        result.push({ start: normStart, end: normEnd })
       }
     })
-    return result
+    return { intervals: result, hasInvalid: hasInvalid }
   }
 
   function renderPriceFields(prefix, tier) {
@@ -1336,9 +1410,9 @@ export function renderUsageDashboard(): string {
   }
 
   $('addIntervalBtn').addEventListener('click', function () {
-    var list = collectIntervals()
-    list.push({ start: '09:00', end: '12:00' })
-    renderIntervals(list)
+    var res = collectIntervals()
+    res.intervals.push({ start: '09:00', end: '12:00' })
+    renderIntervals(res.intervals)
   })
 
   $('addModelBtn').addEventListener('click', function () {
@@ -1381,12 +1455,38 @@ export function renderUsageDashboard(): string {
     var currencyRadio = document.querySelector('input[name="pricingCurrency"]:checked')
     var currency = currencyRadio ? currencyRadio.value : 'CNY'
     var weekendOffpeak = $('weekendOffpeak').checked
-    var intervals = collectIntervals()
+    var intervalResult = collectIntervals()
 
-    var timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/
-    for (var i = 0; i < intervals.length; i++) {
-      if (!timeRegex.test(intervals[i].start) || !timeRegex.test(intervals[i].end)) {
-        showToast('高峰时段格式必须为 HH:MM (例如 09:00)', true)
+    // 检查是否有任何模型处于分时峰谷计价模式
+    var hasTieredModel = false
+    var cards = document.querySelectorAll('#modelList .model-card')
+    cards.forEach(function (card) {
+      var modeRadio = card.querySelector('.segmented-control input:checked, .tier-mode-toggle input:checked')
+      if (modeRadio && modeRadio.value === 'tiered') hasTieredModel = true
+    })
+
+    // 如果有时段输入不合法：高亮标红并平滑滚动到出错位置
+    if (intervalResult.hasInvalid) {
+      var firstInvalid = document.querySelector('#intervalsList .input-invalid')
+      if (firstInvalid) {
+        firstInvalid.focus()
+        firstInvalid.select()
+        firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      showToast('高峰时段格式错误，已自动定位标红输入框，请输入正确时间（如 09:00）', true)
+      return
+    }
+
+    // 校验模型名称是否填入
+    var nameInputs = document.querySelectorAll('#modelList .model-name-input')
+    for (var i = 0; i < nameInputs.length; i++) {
+      var inp = nameInputs[i]
+      inp.classList.remove('input-invalid')
+      if (!inp.value.trim()) {
+        inp.classList.add('input-invalid')
+        inp.focus()
+        inp.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        showToast('模型名称不能为空，请填写标红的模型名称', true)
         return
       }
     }
@@ -1396,7 +1496,7 @@ export function renderUsageDashboard(): string {
       currency: currency,
       peakSchedule: {
         weekendOffpeak: weekendOffpeak,
-        intervals: intervals
+        intervals: intervalResult.intervals
       },
       pricing: pricing
     }
