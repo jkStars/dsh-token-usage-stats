@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.8] - 2026-09-04
+
+### 🚀 稳定性与统计恢复 (Stability & Data Recovery)
+- **底层会话解密与容错兜底**：当官方 `sessionPersistence.open()` 因旧版会话迁移校验失败（如 `subagent/descriptor` 格式升级异常）时，自动无损降级至原生多帧 Zstandard 解压扫描器直接提取原始事件行，彻底解决历史会话丢失导致 5000+ 次请求和数亿 Token 未被统计的问题。
+- **杜绝 Event Loop 阻塞卡顿**：
+  - 遇到异常会话统一登记 revision，避免后续每 4 秒轮询或前端请求时无谓重复打开解密大文件。
+  - 在全量会话回放过程中引入微任务让出机制（`setImmediate`），彻底消除打开面板长达 26 秒的主线程假死。
+- **跨会话模型记忆机制**：新增持久化模型记忆映射（`sessionModels`），彻底解决增量重放时因跳过头部 `request/context` 事件导致模型丢失沦为 `unknown`、计算费用为 0 的问题。
+
+---
+
 ## [0.3.7] - 2026-09-03
 
 ### 🐛 问题修复与体验强化 (Bug Fixes & UX)

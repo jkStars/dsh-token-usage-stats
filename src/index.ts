@@ -14,7 +14,8 @@ import type { Session, SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
 import type { SessionPersistence } from '@deepseek-ai/dsh-session-persistence'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import type {} from '@deepseek-ai/dsh-session-title'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { zstdDecompress } from 'node:zlib'
 import os from 'node:os'
 import path from 'node:path'
 import { renderUsageDashboard } from './dashboard.ts'
@@ -105,6 +106,99 @@ function loadPersistedPricing(): TokenUsageStatsConfig | undefined {
 function savePersistedPricing(payload: PricingConfigPayload): void {
   const file = getPricingStoragePath()
   writeFileSync(file, JSON.stringify(payload, null, 2), 'utf8')
+}
+
+const ZSTD_MAGIC = 0xFD2FB528
+
+interface ZstdFrameRange {
+  readonly start: number
+  readonly end: number
+}
+
+function scanConcatenatedZstdFrames(buffer: Buffer): ZstdFrameRange[] {
+  const frames: ZstdFrameRange[] = []
+  let offset = 0
+  while (offset < buffer.length) {
+    const start = offset
+    if (buffer.length - offset < 4) break
+    if (buffer.readUInt32LE(offset) !== ZSTD_MAGIC) break
+    offset += 4
+    if (offset === buffer.length) break
+    const descriptor = buffer.readUInt8(offset)
+    offset += 1
+    const contentSizeFlag = descriptor >>> 6
+    const singleSegment = (descriptor & 0x20) !== 0
+    const checksum = (descriptor & 0x04) !== 0
+    const dictionaryFlag = descriptor & 0x03
+    const dictionaryBytes = dictionaryFlag === 3 ? 4 : dictionaryFlag
+    const contentSizeBytes = contentSizeFlag === 0 ? (singleSegment ? 1 : 0) : 1 << contentSizeFlag
+    const remainingHeaderBytes = (singleSegment ? 0 : 1) + dictionaryBytes + contentSizeBytes
+    if (buffer.length - offset < remainingHeaderBytes) break
+    offset += remainingHeaderBytes
+    for (;;) {
+      if (buffer.length - offset < 3) break
+      const blockHeader = buffer.readUIntLE(offset, 3)
+      offset += 3
+      const lastBlock = (blockHeader & 1) !== 0
+      const blockType = (blockHeader >>> 1) & 0x03
+      const blockSize = blockHeader >>> 3
+      const payloadBytes = blockType === 0x01 ? 1 : blockSize
+      if (buffer.length - offset < payloadBytes) break
+      offset += payloadBytes
+      if (lastBlock) break
+    }
+    if (checksum) {
+      if (buffer.length - offset < 4) break
+      offset += 4
+    }
+    frames.push({ start, end: offset })
+  }
+  return frames
+}
+
+async function decompressConcatenatedZstd(buffer: Buffer): Promise<string> {
+  const frames = scanConcatenatedZstdFrames(buffer)
+  if (frames.length === 0) {
+    return await new Promise<string>((resolve) => {
+      zstdDecompress(buffer, (err, out) => {
+        if (err || !out) resolve('')
+        else resolve(out.toString('utf8'))
+      })
+    })
+  }
+  let result = ''
+  for (const f of frames) {
+    const slice = buffer.subarray(f.start, f.end)
+    const chunk = await new Promise<string>((resolve) => {
+      zstdDecompress(slice, (err, out) => {
+        if (err || !out) resolve('')
+        else resolve(out.toString('utf8'))
+      })
+    })
+    result += chunk
+  }
+  return result
+}
+
+function projectKeySlug(cwd: string): string {
+  let readable = ''
+  let separatorRun = false
+  for (let i = 0; i < cwd.length; i++) {
+    const code = cwd.charCodeAt(i)
+    const ch = String.fromCharCode(code)
+    if (ch === '/' || ch === '\\' || ch === ':') {
+      if (!separatorRun) readable += '-'
+      separatorRun = true
+    } else if (ch !== '~' && /^[A-Za-z0-9._-]$/.test(ch)) {
+      readable += ch
+      separatorRun = false
+    } else {
+      readable += '~' + code.toString(16).toUpperCase().padStart(4, '0')
+      separatorRun = false
+    }
+  }
+  const slug = readable.replace(/^-+/, '') || 'root'
+  return `--${slug.slice(0, 251)}--`
 }
 
 const DEFAULT_PEAK_INTERVALS: readonly PeakInterval[] = [
@@ -331,6 +425,8 @@ export class TokenUsageStats extends Service {
   private readonly persistedRevisions = new Map<SessionId, string>()
   /** Latest folded `session/title` text per session (last-wins). */
   private readonly titles = new Map<SessionId, string>()
+  /** Persistent map from sessionId to last detected model/provider. */
+  private readonly sessionModels = new Map<SessionId, { provider?: string | undefined; model?: string | undefined }>()
   private persistence: SessionPersistence | undefined
   private lastRehydrateTime = 0
   private rehydrating: Promise<void> | undefined
@@ -548,12 +644,32 @@ export class TokenUsageStats extends Service {
   private _sync(session: Session): void {
     let state = this.states.get(session)
     if (state === undefined) {
+      const remembered = this.sessionModels.get(session.id)
       state = {
         consumedEvents: this.persistedSeq.get(session.id) ?? 0,
-        provider: undefined,
-        model: undefined,
+        provider: remembered?.provider,
+        model: remembered?.model,
       }
       this.states.set(session, state)
+    }
+
+    // 若尚未记住模型，从现有事件中前向快速检索
+    if (!state.model && session.events.length > 0) {
+      for (let i = 0; i < session.events.length; i++) {
+        const ev = session.events[i]
+        if (ev?.type === 'request/context') {
+          state.provider = ev.data.provider
+          state.model = ev.data.model
+          if (state.model) break
+        } else if (ev?.type === 'request/header') {
+          state.provider = ev.data.header.config.provider
+          state.model = ev.data.header.config.model
+          if (state.model) break
+        }
+      }
+      if (state.model) {
+        this.sessionModels.set(session.id, { provider: state.provider, model: state.model })
+      }
     }
 
     while (state.consumedEvents < session.events.length) {
@@ -563,6 +679,63 @@ export class TokenUsageStats extends Service {
       this._foldEvent(session.id, state, event)
       state.consumedEvents += 1
     }
+  }
+
+  /**
+   * Directly read and parse session events from the disk file, bypassing
+   * format-version migrations and strict assertion rejections.
+   */
+  private async _fallbackReadSession(
+    snapshot: { header: { id: SessionId; cwd?: string } },
+  ): Promise<readonly SessionEvent[]> {
+    const root = (this.persistence as unknown as { root?: string })?.root
+      ?? path.join(os.homedir(), '.dsh', 'sessions')
+    const id = snapshot.header.id
+    const cwd = snapshot.header.cwd
+    const pKey = cwd ? projectKeySlug(cwd) : '_no-cwd'
+    const dir = path.join(root, pKey, id)
+    if (!existsSync(dir)) return []
+
+    let files: string[] = []
+    try {
+      files = readdirSync(dir)
+    } catch {
+      return []
+    }
+
+    const logFiles = files.filter(f => f.startsWith('session') && (f.endsWith('.zstd') || f.endsWith('.jsonl')))
+    if (logFiles.length === 0) return []
+    // Latest format version first (v2 -> v1 -> v0)
+    logFiles.sort().reverse()
+    const targetFile = path.join(dir, logFiles[0]!)
+    const isZstd = targetFile.endsWith('.zstd')
+
+    let rawText = ''
+    try {
+      if (isZstd) {
+        const buf = readFileSync(targetFile)
+        rawText = await decompressConcatenatedZstd(buf)
+      } else {
+        rawText = readFileSync(targetFile, 'utf8')
+      }
+    } catch {
+      return []
+    }
+
+    if (!rawText) return []
+    const lines = rawText.trim().split('\n')
+    const events: SessionEvent[] = []
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i]!.trim()
+      if (!line) continue
+      try {
+        const ev = JSON.parse(line) as SessionEvent
+        if (ev && typeof ev === 'object' && typeof ev.type === 'string') {
+          events.push(ev)
+        }
+      } catch {}
+    }
+    return events
   }
 
   /**
@@ -576,8 +749,8 @@ export class TokenUsageStats extends Service {
     if (!sp) return
     this.persistence = sp
     const anyPersistence = sp as unknown as {
-      list?: () => Promise<readonly { header: { id: SessionId } }[]>
-      listSnapshots?: () => Promise<readonly { header: { id: SessionId } }[]>
+      list?: () => Promise<readonly { header: { id: SessionId; cwd?: string } }[]>
+      listSnapshots?: () => Promise<readonly { header: { id: SessionId; cwd?: string } }[]>
       open?: (id: SessionId, access: string) => Promise<{
         read: () => Promise<readonly SessionEvent[]>
         close: () => Promise<void>
@@ -602,25 +775,39 @@ export class TokenUsageStats extends Service {
       }
 
       let events: readonly SessionEvent[] = []
+      let openedByOfficial = false
       try {
         if (typeof anyPersistence.open === 'function') {
           const handle = await anyPersistence.open(id, 'read')
           try {
             events = await handle.read()
+            openedByOfficial = true
           } finally {
             await handle.close()
           }
         } else if (typeof anyPersistence.inspect === 'function') {
           const inspection = await anyPersistence.inspect(id)
           events = inspection.events
+          openedByOfficial = true
         }
       } catch {
-        continue
+        // Official sessionPersistence.open failed; fall through to fallback read
       }
 
+      if (!openedByOfficial || events.length === 0) {
+        const fallbackEvents = await this._fallbackReadSession(snapshot)
+        if (fallbackEvents.length > 0) {
+          events = fallbackEvents
+        }
+      }
+
+      // 无论何种方式，记录 revision 杜绝无休止的重复尝试
       if (rev !== undefined) {
         this.persistedRevisions.set(id, rev)
       }
+
+      // 让出事件循环微任务，杜绝大批量文件处理卡死主线程
+      await new Promise(resolve => setImmediate(resolve))
 
       if (events.length <= lastSeq) continue
 
@@ -630,7 +817,33 @@ export class TokenUsageStats extends Service {
         const liveState = this.states.get(live)
         if (liveState !== undefined && liveState.consumedEvents >= events.length) continue
       }
-      const state: SessionState = { consumedEvents: lastSeq, provider: undefined, model: undefined }
+
+      const remembered = this.sessionModels.get(id)
+      const state: SessionState = {
+        consumedEvents: lastSeq,
+        provider: remembered?.provider,
+        model: remembered?.model,
+      }
+
+      // 增量场景下若当前 state 缺失 model，从完整事件列表中快速前向探查
+      if (!state.model && events.length > 0) {
+        for (let i = 0; i < events.length; i++) {
+          const ev = events[i]
+          if (ev?.type === 'request/context') {
+            state.provider = ev.data.provider
+            state.model = ev.data.model
+            if (state.model) break
+          } else if (ev?.type === 'request/header') {
+            state.provider = ev.data.header.config.provider
+            state.model = ev.data.header.config.model
+            if (state.model) break
+          }
+        }
+        if (state.model) {
+          this.sessionModels.set(id, { provider: state.provider, model: state.model })
+        }
+      }
+
       for (let i = lastSeq; i < events.length; i++) {
         // Session construction ensures non-null contiguous events
         // oxlint-disable-next-line typescript/no-non-null-assertion
@@ -647,11 +860,17 @@ export class TokenUsageStats extends Service {
         const config = event.data.header.config
         state.provider = config.provider
         state.model = config.model
+        if (state.model) {
+          this.sessionModels.set(session, { provider: state.provider, model: state.model })
+        }
         break
       }
       case 'request/context':
         state.provider = event.data.provider
         state.model = event.data.model
+        if (state.model) {
+          this.sessionModels.set(session, { provider: state.provider, model: state.model })
+        }
         break
       case 'assistant/chunk':
         if (event.data.chunk.type === 'usage') {
