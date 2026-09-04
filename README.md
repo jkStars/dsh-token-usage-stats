@@ -27,7 +27,7 @@ DSH Web 插件：跨会话的 Token 用量、请求次数与可选成本统计�
 ## 安装
 
 ```sh
-dsh plugin --profile web add dsh-token-usage-stats@0.3.8
+dsh plugin --profile web add dsh-token-usage-stats@0.3.9
 ```
 
 插件的 `cordis.patch.yml` 会插入插件行；浏览器半区通过 `dsh.client` 清单自动加载。安装后重启宿主（或刷新 GUI）。
@@ -42,7 +42,7 @@ dsh plugin --profile web add dsh-token-usage-stats@latest
 
 从侧边栏底部入口打开仪表盘，或直接访问 `http://<host>:<port>/token-usage-stats`。
 
-页面默认显示「今天」的按小时视图，可切换 今天 / 近 3 天 / 近 7 天 / 全部 范围，其中「近 7 天」和「全部」显示按天视图。每 10 秒自动刷新一次。仅当配置了模型定价时才显示成本金额。
+页面默认显示「今天」的按小时视图，可切换 今天 / 近 3 天 / 近 7 天 / 近 30 天 / 全部 范围，其中「近 7 天」、「近 30 天」和「全部」显示按天视图（「全部」在跨度较长时会自动按自然周或自然月折叠展示，确保图表清晰不拥挤）。每 10 秒自动刷新一次。仅当配置了模型定价时才显示成本金额。
 
 ## 配置
 

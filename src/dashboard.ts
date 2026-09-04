@@ -555,6 +555,7 @@ export function renderUsageDashboard(): string {
         <option value="today">今天</option>
         <option value="3d">近 3 天</option>
         <option value="7d">近 7 天</option>
+        <option value="30d">近 30 天</option>
         <option value="all">全部</option>
       </select>
     </label>
@@ -759,12 +760,26 @@ export function renderUsageDashboard(): string {
   }
   function bucketLabel(startTime, granularity) {
     var d = new Date(startTime)
+    if (granularity === 'month') {
+      return (d.getMonth() + 1) + '月'
+    }
+    if (granularity === 'week') {
+      return (d.getMonth() + 1) + '/' + d.getDate()
+    }
     if (granularity === 'day') {
       return (d.getMonth() + 1) + '/' + d.getDate()
     }
     return String(d.getHours()).padStart(2, '0') + ':00'
   }
   function tooltipHead(p, granularity) {
+    var d = new Date(p.startTime)
+    if (granularity === 'month') {
+      return d.getFullYear() + '年' + (d.getMonth() + 1) + '月'
+    }
+    if (granularity === 'week') {
+      var endD = new Date(p.endTime - 1)
+      return (d.getMonth() + 1) + '/' + d.getDate() + ' ~ ' + (endD.getMonth() + 1) + '/' + endD.getDate() + ' (周)'
+    }
     var start = bucketLabel(p.startTime, granularity)
     if (granularity === 'day') return start
     return start + ' ~ ' + bucketLabel(p.endTime, granularity)
@@ -965,6 +980,137 @@ export function renderUsageDashboard(): string {
       })
     })
   }
+  function adaptSeriesForDisplay(rawSeries, currentGranularity, range) {
+    if (!rawSeries || rawSeries.length <= 30 || range !== 'all' || currentGranularity !== 'day') {
+      return { series: rawSeries || [], granularity: currentGranularity }
+    }
+    if (rawSeries.length <= 180) {
+      return { series: aggregateSeriesByWeek(rawSeries), granularity: 'week' }
+    }
+    return { series: aggregateSeriesByMonth(rawSeries), granularity: 'month' }
+  }
+
+  function aggregateSeriesByWeek(series) {
+    var groups = new Map()
+    for (var i = 0; i < series.length; i++) {
+      var p = series[i]
+      var d = new Date(p.startTime)
+      d.setHours(0, 0, 0, 0)
+      var day = d.getDay()
+      var diff = (day === 0 ? -6 : 1) - day
+      d.setDate(d.getDate() + diff)
+      var weekStart = d.getTime()
+      var group = groups.get(weekStart)
+      if (!group) {
+        group = {
+          startTime: weekStart,
+          endTime: weekStart + 7 * 86400000,
+          totals: {
+            requestCount: 0,
+            uncachedInputTokens: 0,
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
+            outputTokens: 0,
+            totalTokens: 0,
+          },
+          modelsMap: {},
+        }
+        groups.set(weekStart, group)
+      }
+      var gt = group.totals
+      var pt = p.totals
+      gt.requestCount += pt.requestCount || 0
+      gt.uncachedInputTokens += pt.uncachedInputTokens || 0
+      gt.cacheReadTokens += pt.cacheReadTokens || 0
+      gt.cacheWriteTokens += pt.cacheWriteTokens || 0
+      gt.outputTokens += pt.outputTokens || 0
+      gt.totalTokens += pt.totalTokens || 0
+      if (pt.cost !== undefined) {
+        gt.cost = (gt.cost || 0) + pt.cost
+      }
+      if (p.models) {
+        for (var j = 0; j < p.models.length; j++) {
+          var m = p.models[j]
+          group.modelsMap[m.model] = (group.modelsMap[m.model] || 0) + (m.cost || 0)
+        }
+      }
+    }
+    var result = []
+    groups.forEach(function (group) {
+      var models = []
+      for (var modelName in group.modelsMap) {
+        models.push({ model: modelName, cost: group.modelsMap[modelName] })
+      }
+      result.push({
+        startTime: group.startTime,
+        endTime: group.endTime,
+        totals: group.totals,
+        models: models,
+      })
+    })
+    result.sort(function (a, b) { return a.startTime - b.startTime })
+    return result
+  }
+
+  function aggregateSeriesByMonth(series) {
+    var groups = new Map()
+    for (var i = 0; i < series.length; i++) {
+      var p = series[i]
+      var d = new Date(p.startTime)
+      var monthStart = new Date(d.getFullYear(), d.getMonth(), 1).getTime()
+      var monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 1).getTime()
+      var group = groups.get(monthStart)
+      if (!group) {
+        group = {
+          startTime: monthStart,
+          endTime: monthEnd,
+          totals: {
+            requestCount: 0,
+            uncachedInputTokens: 0,
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
+            outputTokens: 0,
+            totalTokens: 0,
+          },
+          modelsMap: {},
+        }
+        groups.set(monthStart, group)
+      }
+      var gt = group.totals
+      var pt = p.totals
+      gt.requestCount += pt.requestCount || 0
+      gt.uncachedInputTokens += pt.uncachedInputTokens || 0
+      gt.cacheReadTokens += pt.cacheReadTokens || 0
+      gt.cacheWriteTokens += pt.cacheWriteTokens || 0
+      gt.outputTokens += pt.outputTokens || 0
+      gt.totalTokens += pt.totalTokens || 0
+      if (pt.cost !== undefined) {
+        gt.cost = (gt.cost || 0) + pt.cost
+      }
+      if (p.models) {
+        for (var j = 0; j < p.models.length; j++) {
+          var m = p.models[j]
+          group.modelsMap[m.model] = (group.modelsMap[m.model] || 0) + (m.cost || 0)
+        }
+      }
+    }
+    var result = []
+    groups.forEach(function (group) {
+      var models = []
+      for (var modelName in group.modelsMap) {
+        models.push({ model: modelName, cost: group.modelsMap[modelName] })
+      }
+      result.push({
+        startTime: group.startTime,
+        endTime: group.endTime,
+        totals: group.totals,
+        models: models,
+      })
+    })
+    result.sort(function (a, b) { return a.startTime - b.startTime })
+    return result
+  }
+
   function render(snapshot) {
     $('cost').textContent = costText(snapshot, snapshot.totals)
     $('currency').textContent = snapshot.currency || ''
@@ -972,8 +1118,10 @@ export function renderUsageDashboard(): string {
     $('totalTokens').textContent = number(snapshot.totals.totalTokens)
     $('outputTokens').textContent = number(snapshot.totals.outputTokens)
     renderBreakdown(snapshot.totals)
-    renderSeries(snapshot.series, $('granularity').value)
-    renderCostChart(snapshot.series, $('granularity').value, snapshot)
+    var range = $('range').value
+    var adapted = adaptSeriesForDisplay(snapshot.series, $('granularity').value, range)
+    renderSeries(adapted.series, adapted.granularity)
+    renderCostChart(adapted.series, adapted.granularity, snapshot)
     renderModels(snapshot)
     renderTopSessions(snapshot)
   }
@@ -1027,6 +1175,7 @@ export function renderUsageDashboard(): string {
     from.setHours(0, 0, 0, 0)
     if (range === '3d') from.setDate(from.getDate() - 2)
     if (range === '7d') from.setDate(from.getDate() - 6)
+    if (range === '30d') from.setDate(from.getDate() - 29)
     return new URLSearchParams({ from: String(from.getTime()) })
   }
   var rangeForcedDay = false
@@ -1034,7 +1183,7 @@ export function renderUsageDashboard(): string {
     var g = $('granularity')
     var range = $('range').value
     var hourOpt = g.querySelector('option[value="hour"]')
-    if (range === 'all' || range === '7d') {
+    if (range === 'all' || range === '7d' || range === '30d') {
       rangeForcedDay = true
       if (hourOpt) hourOpt.disabled = true
       g.value = 'day'

@@ -27,7 +27,7 @@ DSH web plugin: cross-session token usage, request count, and optional cost anal
 ## Install
 
 ```sh
-dsh plugin --profile web add dsh-token-usage-stats@0.3.8
+dsh plugin --profile web add dsh-token-usage-stats@0.3.9
 ```
 
 The package's `cordis.patch.yml` inserts the plugin row; the browser half loads from the `dsh.client` manifest. Restart the host (or reload the GUI) after installing.
@@ -40,7 +40,7 @@ dsh plugin --profile web add dsh-token-usage-stats@latest
 
 ## Usage
 
-Open the dashboard from the sidebar footer entry, or browse directly to `http://<host>:<port>/token-usage-stats`. The page defaults to today's hourly view and offers today / 3-day / 7-day / all ranges, where the 7-day and all ranges show the daily view. It auto-refreshes every 10 seconds. Cost figures appear only when model pricing is configured.
+Open the dashboard from the sidebar footer entry, or browse directly to `http://<host>:<port>/token-usage-stats`. The page defaults to today's hourly view and offers today / 3-day / 7-day / 30-day / all ranges, where the 7-day, 30-day, and all ranges show the daily view (the all-range view automatically downsamples to weekly or monthly intervals over longer spans to keep the charts readable and uncluttered). It auto-refreshes every 10 seconds. Cost figures appear only when model pricing is configured.
 
 ## Config
 
