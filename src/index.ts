@@ -108,6 +108,29 @@ function savePersistedPricing(payload: PricingConfigPayload): void {
   writeFileSync(file, JSON.stringify(payload, null, 2), 'utf8')
 }
 
+/**
+ * Upstream model ids that providers report, mapped to their price-book key.
+ *
+ * The price book keys are `deepseek-flash` (DeepSeek-V4.1-Flash) and
+ * `deepseek-v4-pro` (DeepSeek-V4-Pro-0813). Providers such as `buddy` report
+ * the upstream ids below instead, so without this mapping those requests would
+ * silently contribute no cost. Keys are compared lowercased.
+ */
+const PRICING_ALIASES: Readonly<Record<string, string>> = {
+  // DeepSeek-V4.1-Flash
+  'deepseek-v4.1-flash': 'deepseek-flash',
+  'deepseek-v4.1-flash-sg': 'deepseek-flash',
+  'deepseek-v4-flash': 'deepseek-flash',
+  'deepseek-v4-flash-vision-exp': 'deepseek-flash',
+  'deepseek-v4-flash-0731': 'deepseek-flash',
+  'sn-deepseek-v4-1-flash': 'deepseek-flash',
+  'deepseek-chat': 'deepseek-flash',
+  'deepseek-reasoner': 'deepseek-flash',
+  // DeepSeek-V4-Pro-0813
+  'deepseek-v4-pro': 'deepseek-v4-pro',
+  'deepseek-v4-pro-0813': 'deepseek-v4-pro',
+}
+
 const ZSTD_MAGIC = 0xFD2FB528
 
 interface ZstdFrameRange {
@@ -986,19 +1009,20 @@ export class TokenUsageStats extends Service {
    * @param time - the usage record's time (Unix ms) used to pick the tier.
    * @param key - the price key to read.
    */
-  /** Resolve pricing with historical model alias fallback (e.g. deepseek-v4-flash, deepseek-chat -> deepseek-flash). */
+  /**
+   * Resolve pricing for a provider model id, including historical and
+   * vendor-specific aliases of the two published models.
+   *
+   * `deepseek-flash` is DeepSeek-V4.1-Flash and `deepseek-v4-pro` is
+   * DeepSeek-V4-Pro-0813. Providers report either the price-book key or an
+   * upstream id (`deepseek-v4.1-flash`, `deepseek-v4.1-flash-sg`, …), so both
+   * spellings must reach the same price.
+   */
   private _resolvePricing(model: string): ModelPricing | undefined {
     const direct = this.config.pricing[model]
     if (direct !== undefined) return direct
-    if (
-      model === 'deepseek-v4-flash'
-      || model === 'deepseek-v4-flash-vision-exp'
-      || model === 'deepseek-chat'
-      || model === 'deepseek-reasoner'
-    ) {
-      return this.config.pricing['deepseek-flash']
-    }
-    return undefined
+    const key = PRICING_ALIASES[model.toLowerCase()]
+    return key === undefined ? undefined : this.config.pricing[key]
   }
 
   /**

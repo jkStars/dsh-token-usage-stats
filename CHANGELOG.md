@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.15] - 2026-10-03
+
+### 兼容 dsh 0.2.0-rc.2 (Compatibility with dsh 0.2.0-rc.2)
+- **修正 peerDependencies 版本范围**：
+  - 原 `^0.1.1-rc.2` 只覆盖 0.1.x；dsh 安装器与启动预检会拒绝 peer 范围不匹配当前运行时的插件，导致 0.2.0-rc.2 上无法安装。现改为 `>=0.1.7-rc.2 <0.3.0`，同时支持 dsh 0.1.7-rc.2 与 0.2.0-rc.2（含 0.2.0-rc.1）。
+  - `@deepseek-ai/cordis` 修正为 `^4.0.4`，与 dsh 0.2.0-rc.2 自带的运行时版本一致。
+  - 新增 `engines.dsh`，声明同一兼容范围。
+- **修复从 git 安装后插件不加载的问题**：`lib/` 此前被 `.gitignore` 忽略，入口文件未纳入版本管理，而 `package.json` 的 `main`/`exports` 指向 `lib/`。从 git 安装（`dsh plugin add github:jkStars/dsh-token-usage-stats#<分支或标签>`）时 pnpm 只取仓库快照、不执行构建，得到的包缺少入口文件，安装虽成功但插件不加载（侧边栏无入口、`/token-usage-stats` 路由不存在）。现将 `lib/index.js`、`lib/invariant.js`、`lib/client.js` 与 `lib/types/**/*.d.ts` 纳入版本管理，与 `package.json` 的 `files` 字段一致。npm 发布不受影响（`prepublishOnly` 仍会重新构建）。
+- **修复主力模型无成本的问题**：`_resolvePricing` 的别名回退只覆盖 `deepseek-v4-flash`、`deepseek-chat` 等旧写法，未覆盖各 provider 实际上报的 `deepseek-v4.1-flash`（DeepSeek-V4.1-Flash 的官方 id，含 `-sg` 等变体）。这些请求匹配不到价格，成本整段记为 0，面板显示「未配置定价」。现改为显式别名表，`deepseek-flash` 与 `deepseek-v4-pro` 两档价格分别覆盖其全部已知上游 id，大小写不敏感。
+- 无功能与 API 变更，运行时行为与 0.3.14 一致。
+
+---
+
 ## [0.3.14] - 2026-09-26
 
 ### 兼容性与运行环境升级 (Compatibility with dsh 0.1.7-rc.2)

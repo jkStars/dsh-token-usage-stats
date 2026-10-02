@@ -27,7 +27,7 @@ DSH Web 插件：跨会话的 Token 用量、请求次数与可选成本统计�
 ## 安装
 
 ```sh
-dsh plugin --profile web add dsh-token-usage-stats@0.3.14
+dsh plugin --profile web add dsh-token-usage-stats@0.3.15
 ```
 
 插件的 `cordis.patch.yml` 会插入插件行；浏览器半区通过 `dsh.client` 清单自动加载。安装后重启宿主（或刷新 GUI）。
@@ -38,6 +38,27 @@ dsh plugin --profile web add dsh-token-usage-stats@0.3.14
 dsh plugin --profile web add dsh-token-usage-stats@latest
 ```
 
+### 从仓库安装（可选）
+
+也可以直接安装尚未发布到 npm 的提交：
+
+```sh
+dsh plugin --profile web add github:jkStars/dsh-token-usage-stats#<分支或标签>
+```
+
+请显式指定 `#<分支或标签>`：省略时 pnpm 解析的是仓库默认分支，可能不是你想安装的版本。
+
+### 兼容的 dsh 版本
+
+支持 dsh 0.1.7-rc.2 起至 0.3.0 之前的版本（含 0.2.0-rc.1 / 0.2.0-rc.2）。
+
+dsh 会校验插件的 peer 依赖是否匹配当前运行时版本，不匹配时会拒绝安装。若你使用的 dsh 高于此范围，请等待本插件发布对应版本，或自行授权精确版本豁免（存在崩溃或数据丢失风险）：
+
+```sh
+dsh plugin --profile web allow-version dsh-token-usage-stats@0.3.15 \
+  --dsh-version <当前运行时版本> --accept-risk
+```
+
 ## 使用
 
 从侧边栏底部入口打开仪表盘，或直接访问 `http://<host>:<port>/token-usage-stats`。
@@ -46,7 +67,7 @@ dsh plugin --profile web add dsh-token-usage-stats@latest
 
 ## 配置
 
-插入行支持 `config.currency`（成本显示货币）与 `config.pricing`（各模型每百万 token 的价格）。成本按**高峰/闲时两档**计价：高峰为北京时间 09:00-12:00、14:00-18:00，其余北京时段为闲时；**周末（北京时间周六/周日）全天按闲时**。用 `peak`/`offpeak` 两档的模型按使用时间取对应档位；只用四个平档键（`uncachedInputPerMillion` / `cacheReadPerMillion` / `cacheWritePerMillion` / `outputPerMillion`）的模型任意时段同价。默认行带 `currency: CNY`，以及 `deepseek-flash` 与 `deepseek-v4-pro` 的官方高峰/闲时定价（自动兼容 `deepseek-v4-flash*` 历史模型别名）。
+插入行支持 `config.currency`（成本显示货币）与 `config.pricing`（各模型每百万 token 的价格）。成本按**高峰/闲时两档**计价：高峰为北京时间 09:00-12:00、14:00-18:00，其余北京时段为闲时；**周末（北京时间周六/周日）全天按闲时**。用 `peak`/`offpeak` 两档的模型按使用时间取对应档位；只用四个平档键（`uncachedInputPerMillion` / `cacheReadPerMillion` / `cacheWritePerMillion` / `outputPerMillion`）的模型任意时段同价。默认行带 `currency: CNY`，以及 `deepseek-flash` 与 `deepseek-v4-pro` 的官方高峰/闲时定价。`deepseek-flash` 即 DeepSeek-V4.1-Flash，`deepseek-v4-pro` 即 DeepSeek-V4-Pro-0813；各 provider 上报的上游 id（`deepseek-v4.1-flash`、`deepseek-v4.1-flash-sg`、`deepseek-v4-flash*`、`deepseek-chat`、`deepseek-reasoner` 等）会自动归入对应价格，大小写不敏感。
 
 在 profile 自己的 `cordis.patch.yml` 中覆盖示例：
 

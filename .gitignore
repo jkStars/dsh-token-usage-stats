@@ -1,4 +1,19 @@
-lib/
+# Build output. The published entry points are tracked on purpose: a git-based
+# install cannot build the package, because the build resolves the harness type
+# surface through the `link:` devDependencies. Other build by-products stay
+# ignored and are rebuilt by `pnpm run build`.
+lib/*
+!lib/index.js
+!lib/invariant.js
+!lib/client.js
+!lib/types/
+
+lib/types/*
+!lib/types/*.d.ts
+!lib/types/client/
+lib/types/client/*
+!lib/types/client/*.d.ts
+
 node_modules/
 *.tsbuildinfo
 

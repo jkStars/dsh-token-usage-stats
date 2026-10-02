@@ -27,7 +27,7 @@ DSH web plugin: cross-session token usage, request count, and optional cost anal
 ## Install
 
 ```sh
-dsh plugin --profile web add dsh-token-usage-stats@0.3.14
+dsh plugin --profile web add dsh-token-usage-stats@0.3.15
 ```
 
 The package's `cordis.patch.yml` inserts the plugin row; the browser half loads from the `dsh.client` manifest. Restart the host (or reload the GUI) after installing.
@@ -38,13 +38,34 @@ To update to a newer release:
 dsh plugin --profile web add dsh-token-usage-stats@latest
 ```
 
+### Install from the repository (optional)
+
+You can also install a commit that has not been published to npm yet:
+
+```sh
+dsh plugin --profile web add github:jkStars/dsh-token-usage-stats#<branch-or-tag>
+```
+
+Specify `#<branch-or-tag>` explicitly: without it pnpm resolves the repository's default branch, which may not be the version you want.
+
+### Compatible dsh versions
+
+Supports dsh 0.1.7-rc.2 up to but not including 0.3.0 (including 0.2.0-rc.1 and 0.2.0-rc.2).
+
+dsh validates a plugin's peer dependencies against the running runtime version and refuses to install a mismatch. On a newer dsh, wait for a matching plugin release, or grant an exact-version exemption yourself (risking crashes or data loss):
+
+```sh
+dsh plugin --profile web allow-version dsh-token-usage-stats@0.3.15 \
+  --dsh-version <exact runtime version> --accept-risk
+```
+
 ## Usage
 
 Open the dashboard from the sidebar footer entry, or browse directly to `http://<host>:<port>/token-usage-stats`. The page defaults to today's hourly view and offers today / 3-day / 7-day / 30-day / all ranges, where the 7-day, 30-day, and all ranges show the daily view (the all-range view automatically downsamples to weekly or monthly intervals over longer spans to keep the charts readable and uncluttered). It auto-refreshes every 10 seconds. Cost figures appear only when model pricing is configured.
 
 ## Config
 
-The inserted row accepts `config.currency` (report cost in this currency) and `config.pricing` (per-model per-million-token prices). Cost is computed with a **peak/off-peak split**: peak hours are Beijing time 09:00-12:00 and 14:00-18:00, every other Beijing hour is off-peak; weekends (Beijing Saturday/Sunday) are always off-peak. A model priced with a `peak`/`offpeak` pair uses the matching tier by the usage record's time; a model priced with only the four flat keys uses that price at any hour. The default row ships `currency: CNY` and peak/off-peak pricing for `deepseek-flash` and `deepseek-v4-pro` (with historical model alias fallback).
+The inserted row accepts `config.currency` (report cost in this currency) and `config.pricing` (per-model per-million-token prices). Cost is computed with a **peak/off-peak split**: peak hours are Beijing time 09:00-12:00 and 14:00-18:00, every other Beijing hour is off-peak; weekends (Beijing Saturday/Sunday) are always off-peak. A model priced with a `peak`/`offpeak` pair uses the matching tier by the usage record's time; a model priced with only the four flat keys uses that price at any hour. The default row ships `currency: CNY` and peak/off-peak pricing for `deepseek-flash` and `deepseek-v4-pro`. `deepseek-flash` is DeepSeek-V4.1-Flash and `deepseek-v4-pro` is DeepSeek-V4-Pro-0813; the upstream ids that providers report (`deepseek-v4.1-flash`, `deepseek-v4.1-flash-sg`, `deepseek-v4-flash*`, `deepseek-chat`, `deepseek-reasoner`, …) resolve to the matching price, case-insensitively.
 
 Example override in the profile's own `cordis.patch.yml`:
 
