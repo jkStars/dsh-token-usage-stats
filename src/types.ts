@@ -48,11 +48,35 @@ export interface PeakSchedule {
   readonly intervals?: readonly PeakInterval[] | undefined
 }
 
-/** Complete pricing settings payload for the API and storage. */
+/**
+ * Complete pricing settings payload for the save request and storage.
+ *
+ * This is the override side of the price book: it never carries the built-in
+ * defaults, so what a user saves stays a diff against them.
+ */
 export interface PricingConfigPayload {
   readonly currency?: string | undefined
   readonly peakSchedule?: PeakSchedule | undefined
   readonly pricing: Record<string, ModelPricing>
+}
+
+/**
+ * Price book as the dashboard needs to see it: every price key that can bill a
+ * request, plus the built-in defaults for comparison.
+ *
+ * `pricing` is the effective book (built-in defaults, overridden key by key
+ * with configuration and persisted prices), and `builtinPricing` is the
+ * built-in book alone, so the editor can badge which rows the user has
+ * actually changed and offer to restore one. Saving sends a
+ * {@link PricingConfigPayload}: the configuration, not this view.
+ */
+export interface PricingConfigView extends PricingConfigPayload {
+  /** Effective price for every key the dashboard lists. */
+  readonly pricing: Record<string, ModelPricing>
+  /** Built-in default book, the fallback for every key in `pricing`. */
+  readonly builtinPricing: Record<string, ModelPricing>
+  /** Configured keys whose effective price differs from the built-in default. */
+  readonly overriddenModels: readonly string[]
 }
 
 /**

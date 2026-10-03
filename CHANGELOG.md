@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.16] - 2026-10-03
+
+### 内置默认价目表 (Built-in default price book)
+- **新增内置价目表，无需配置即可显示成本**：此前只有 `cordis.patch.yml` 里显式配置的模型（`deepseek-flash`、`deepseek-v4-pro`）能算出成本，其余模型一律显示「未配置定价」。现随插件内置 96 个模型的默认价目表（人民币 / 每百万 token），未配置时自动生效；`config.pricing` 仍按模型逐键覆盖内置价。
+  - 覆盖 DeepSeek、智谱 GLM、通义千问、豆包、Kimi、MiniMax、腾讯混元，以及 OpenAI GPT、Anthropic Claude、Google Gemini、xAI Grok、Mistral、Cohere 等。
+  - 内置模型 id 解析：provider 上报的上游 id（`deepseek-v4.1-flash`、`claude-opus-5.5`、`openai/gpt-6-sol`、`deepseek-v4-flash-202605` 等）自动归入对应条目——忽略大小写、连字符与点号差异，并剥离组织前缀与快照日期后缀。完全无法识别的模型保持不计费，不套用其它模型价格。
+  - 价目表按 [@kenz1117/dsh-ui-usage-billing](https://github.com/kenz1117/dsh-ui-usage-billing)（MIT）的内置目录整理；美元计价条目按 6.79 折算为人民币，按延迟分档的条目（Gemini Standard/Flex）取其标准档，限时促销按刊例价以免固化过期折扣。
+  - `currency` 未配置时默认 `CNY`，与内置价目表币种一致。
+- **价格配置面板改为展示完整价目表**：此前面板只列出 `config.pricing` 里显式配置的模型（默认仅 `deepseek-flash`、`deepseek-v4-pro`），内置价生效后，`claude-opus-5-5` 等模型的成本已经正确计算，却不出现在面板里，容易被误认为没有配置。现 `/api/token-usage-stats/pricing` 同时返回生效价目表（内置价 + 用户覆盖）与内置价目表本身，面板据此列出全部 96 个模型。
+  - 支持按模型名搜索，并显示「共 N 个模型，M 个已覆盖」。
+  - 每个模型标注「内置默认」或「已覆盖」；已覆盖的条目提供「恢复默认」按钮，撤销该项覆盖。
+  - 保存时只持久化与内置价不同的条目，未改动的模型继续跟随插件后续版本更新；「恢复默认」会清空全部自定义价格。
+- 内部新增 `TokenUsageStats#getPricingConfigView()`，与 `getPricingConfig()` 并存：后者仍是纯配置视图，供保存与存储使用。
+- **修复新增模型时卡片「消失」**：面板按模型名排序，此前改名会在 `change` 时整表重绘，刚新增的卡片会立刻跳到排序后的位置并滚出视野，同时输入框失焦，看起来就像卡片被删掉了；若改成的名称正好与已有模型重名，新卡片更会被直接覆盖丢弃。
+  - 改名改为就地更新：只更新该卡片的键、单选项分组与徽标，列表顺序与焦点保持不变；仅当新名称不再匹配当前搜索词时才重绘。
+  - 重名与空名会被拦下并标红提示，保存前也会再校验一次；列表内的事件改为事件委托，避免就地替换节点后按钮和单选项失效。
+
+---
+
+## [0.3.15] - 2026-10-03
+
+### 兼容 dsh 0.2.0-rc.2 (Compatibility with dsh 0.2.0-rc.2)
+- **修正 peerDependencies 版本范围**：
+  - 原 `^0.1.1-rc.2` 只覆盖 0.1.x；dsh 安装器与启动预检会拒绝 peer 范围不匹配当前运行时的插件，导致 0.2.0-rc.2 上无法安装。现改为 `>=0.1.7-rc.2 <0.3.0`，同时支持 dsh 0.1.7-rc.2 与 0.2.0-rc.2（含 0.2.0-rc.1）。
+  - `@deepseek-ai/cordis` 修正为 `^4.0.4`，与 dsh 0.2.0-rc.2 自带的运行时版本一致。
+  - 新增 `engines.dsh`，声明同一兼容范围。
+- **修复从 git 安装后插件不加载的问题**：`lib/` 此前被 `.gitignore` 忽略，入口文件未纳入版本管理，而 `package.json` 的 `main`/`exports` 指向 `lib/`。从 git 安装（`dsh plugin add github:jkStars/dsh-token-usage-stats#<分支或标签>`）时 pnpm 只取仓库快照、不执行构建，得到的包缺少入口文件，安装虽成功但插件不加载（侧边栏无入口、`/token-usage-stats` 路由不存在）。现将 `lib/index.js`、`lib/invariant.js`、`lib/client.js` 与 `lib/types/**/*.d.ts` 纳入版本管理，与 `package.json` 的 `files` 字段一致。npm 发布不受影响（`prepublishOnly` 仍会重新构建）。
+- **修复主力模型无成本的问题**：`_resolvePricing` 的别名回退只覆盖 `deepseek-v4-flash`、`deepseek-chat` 等旧写法，未覆盖各 provider 实际上报的 `deepseek-v4.1-flash`（DeepSeek-V4.1-Flash 的官方 id，含 `-sg` 等变体）。这些请求匹配不到价格，成本整段记为 0，面板显示「未配置定价」。现改为显式别名表，`deepseek-flash` 与 `deepseek-v4-pro` 两档价格分别覆盖其全部已知上游 id，大小写不敏感。
+- 无功能与 API 变更，运行时行为与 0.3.14 一致。
+
+---
+
 ## [0.3.14] - 2026-09-26
 
 ### 兼容性与运行环境升级 (Compatibility with dsh 0.1.7-rc.2)
