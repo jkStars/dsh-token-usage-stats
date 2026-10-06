@@ -27,7 +27,7 @@ DSH Web 插件：跨会话的 Token 用量、请求次数与可选成本统计�
 ## 安装
 
 ```sh
-dsh plugin --profile web add dsh-token-usage-stats@0.3.14
+dsh plugin --profile web add dsh-token-usage-stats@0.3.15
 ```
 
 插件的 `cordis.patch.yml` 会插入插件行；浏览器半区通过 `dsh.client` 清单自动加载。安装后重启宿主（或刷新 GUI）。
@@ -72,11 +72,11 @@ dsh plugin --profile web add dsh-token-usage-stats@latest
 ## 开发
 
 ```sh
-pnpm install   # devDependencies 通过 link: 指向本地 deepseek-harness checkout
+pnpm install   # devDependencies 从 npm 安装 dsh 0.2.0-rc.2 的 @deepseek-ai/dsh-* 类型
 pnpm run build # tsc -> lib/types, tsdown -> lib/index.js + lib/client.js
 ```
 
-`devDependencies` 通过 `link:` 条目解析 `@deepseek-ai/dsh-*` 的类型，要求 harness checkout 位于本包上一级目录 `../deepseek-harness`。运行时 peer 依赖由 dsh 宿主提供，不从 npm 安装。
+`devDependencies` 固定到与目标运行时相同的 `0.2.0-rc.2` 发布版本，因此类型检查面对的就是宿主实际加载的那套 API。`peerDependencies` 声明 `^0.2.0-rc.2`：dsh 宿主在安装与启动时会用它做兼容性校验（`evaluatePluginCompatibility`），范围不满足即拒绝安装或跳过该 bundle。运行时这些 peer 由 dsh 宿主提供，不从 npm 安装。
 
 ## 发布
 

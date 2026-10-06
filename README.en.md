@@ -27,7 +27,7 @@ DSH web plugin: cross-session token usage, request count, and optional cost anal
 ## Install
 
 ```sh
-dsh plugin --profile web add dsh-token-usage-stats@0.3.14
+dsh plugin --profile web add dsh-token-usage-stats@0.3.15
 ```
 
 The package's `cordis.patch.yml` inserts the plugin row; the browser half loads from the `dsh.client` manifest. Restart the host (or reload the GUI) after installing.
@@ -70,11 +70,11 @@ Example override in the profile's own `cordis.patch.yml`:
 ## Development
 
 ```sh
-pnpm install   # devDependencies link the local deepseek-harness checkout
+pnpm install   # devDependencies install the dsh 0.2.0-rc.2 @deepseek-ai/dsh-* types from npm
 pnpm run build # tsc -> lib/types, tsdown -> lib/index.js + lib/client.js
 ```
 
-The `devDependencies` resolve the `@deepseek-ai/dsh-*` type surface through `link:` entries that expect the harness checkout at `../deepseek-harness` relative to this package. Runtime peers are provided by the dsh host, not installed from npm.
+The `devDependencies` are pinned to the same `0.2.0-rc.2` releases as the target runtime, so type checking runs against the exact API the host loads. `peerDependencies` declares `^0.2.0-rc.2`, which the dsh host evaluates on install and boot (`evaluatePluginCompatibility`); an unsatisfied range refuses the installation or skips the bundle. Those peers are provided by the dsh host at runtime, not installed from npm.
 
 ## Publish
 

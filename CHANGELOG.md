@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.15] - 2026-10-06
+
+### 🔧 适配 dsh 0.2.0-rc.2 (Install Compatibility with dsh 0.2.0-rc.2)
+- **修复「无法安装到 dsh」**：dsh 宿主在安装与启动时用 `evaluatePluginCompatibility` 校验插件 `peerDependencies` 中每个 `@deepseek-ai/dsh*` 是否被运行时 dsh 版本满足。旧声明 `^0.1.1-rc.2` 等价于 `>=0.1.1-rc.2 <0.2.0`，而运行时是 `0.2.0-rc.2`，因此安装被直接拒绝（`installation rejected: Plugin dsh-token-usage-stats@0.3.14 is incompatible with dsh 0.2.0-rc.2`）；即使已写进 profile 的 `dsh.profile.bundles`，启动时该 bundle 也会被静默跳过而不加载。
+  - `peerDependencies` 全量改为 `^0.2.0-rc.2`（满足 `0.2.0-rc.2` 及后续 `0.2.x`）。
+  - `@deepseek-ai/cordis` peer 由 `^0.1.1-rc.2` 改为 `^4.0.4`，对齐 0.2.0-rc.2 实际携带的 cordis 4.0.4。
+- **开发依赖对齐运行时**：`devDependencies` 不再 `link:` 到陈旧且版本错位的 `../deepseek-harness` 检出（0.1.7-rc.2），改为从 npm 安装 `0.2.0-rc.2` 的 `@deepseek-ai/dsh-*`，使类型检查面对宿主真正加载的那套 API；`@deepseek-ai/schemastery` 固定到 0.2.0-rc.2 携带的 3.18.4。
+- **核对 API 漂移**：逐包比对 harness `dsh-v0.1.7-rc.2` 与 `dsh-v0.2.0-rc.2` 之间本插件用到的全部依赖（`dsh-session`、`dsh-llm`、`dsh-session-persistence`、`dsh-session-title`、`dsh-host-webserver`、`dsh-invariants`、`dsh-util-values` 与 `dsh-client-*`），差异均为纯新增（`MenuGroup`、`pointerModality`、`ToolCallRecovery`），没有移除或签名变更；`pnpm run typecheck` 与 `pnpm run build` 在 0.2.0-rc.2 上全部通过，宿主侧与浏览器侧源码无需改动。
+
+---
+
 ## [0.3.14] - 2026-09-26
 
 ### 兼容性与运行环境升级 (Compatibility with dsh 0.1.7-rc.2)
